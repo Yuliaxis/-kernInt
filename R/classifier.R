@@ -14,7 +14,6 @@
 #' @examples
 #' classify(data=MGXdata,kernel="qJac",C=c(0.0001,0.001),k=10)
 #' @importFrom kernlab SVindex as.kernelMatrix predict
-#' @importFrom stats predict
 #' @export
 
 
@@ -41,7 +40,7 @@ classify <- function(data,classes=2, kernel, p=0.8, C, k=10,  classimb="no") {
 
   # 2. Compute kernel matrix
   if(kernel == "qJac") {
-    Jmatrix <- qJacc(data[,7:ncol(data)])
+    Jmatrix <- qJacc(data[,7:ncol(data)]) ##ATENCIÓ CANVIAR!!!!
   } else if(kernel == "wqJac") {
     Jmatrix <- wqJacc(data[,7:ncol(data)],y=data[,1])
   } else {
