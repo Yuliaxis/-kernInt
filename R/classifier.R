@@ -11,12 +11,13 @@
 #' @param k The k for the k-Cross Validation. Minimum k = 2.
 #' @param classimb "weights" to introduce class weights in the SVM algorithm and "data" to oversampling. If other arguments are provided nothing is done.
 #' @param type Procedure to data oversampling ("ubOver" or "ubSMOTE")
-#' @return The test error (accuracy)
+#' @return Confusion matrix
 #' @examples
 #' classify(data=speMGX[,7:ncol(speMGX)],speMGX[,1],kernel="qJac",C=c(0.1,1),k=10)
 #' classify(data=speMGX[,7:ncol(speMGX)],speMGX[,1],kernel="qJac",C=1,classimb="data", type="ubOver")
 #' @importFrom kernlab SVindex as.kernelMatrix predict
 #' @importFrom unbalanced ubBalance
+#' @importFrom ROSE roc.curve
 #' @export
 
 
@@ -45,7 +46,7 @@ classify <- function(data, y, classes=2, kernel, p=0.8, C, k=10,  classimb="no",
     print(summary(diagn))
 
     if(type == "ubOver")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2,  k=0)
-    if(type == "ubSMOTE")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2,percOver = 200)
+    if(type == "ubSMOTE")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
 
     data <- rbind(SobrDadesTr$X,dades[(nlearn+1):N,])
     nlearn <- length(SobrDadesTr$Y)
@@ -91,10 +92,15 @@ classify <- function(data, y, classes=2, kernel, p=0.8, C, k=10,  classimb="no",
   pred <- kernlab::predict(model,teMatrix)
 
   ### Confusion matrix
-  print(ct <- table(Truth=diagn[test.indexes], Pred=pred))
-  print(prop.table(ct,1))
-  # Test error
-  te.error <- round(1-sum(diag(ct))/sum(ct),4)
+  ct <- table(Truth=diagn[test.indexes], Pred=pred)
+  cat(paste("Accuracy:",round(Acc(ct),digits=4),"\n"))
+  pr <- Prec(ct)
+  cat(paste("Precision:",round(pr,digits=4),"\n"))
+  rc <- Rec(ct)
+  cat(paste("Recall:",round(rc,digits=4),"\n"))
+  cat(paste("F1:",round(F1(Prec=pr,Rec=rc),digits=4),"\n"))
 
-  return(te.error)
+  print(roc.curve(diagn[test.indexes], pred))
+
+  return(ct)
 }

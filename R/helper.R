@@ -19,10 +19,6 @@ trainIndx <- function(n, ptrain = 0.8) {
   return(sort(sample(unord,round(ptrain*n))))
 }
 
-## Harmonic mean, to compute the F1 accuracy:
-#' @keywords internal
-harm <- function (a,b) { 2/(1/a+1/b) }
-
 
 ## K-fold cross- validation
 #' @keywords internal
@@ -54,3 +50,25 @@ kCV <- function(COST, K, Yresp, k, R) {
   best.hyp <- data.frame(cost=best.cost,error= min.error)
   return(best.hyp)
 }
+
+
+## Harmonic mean, to compute the F1 accuracy:
+#' @keywords internal
+harm <- function (a,b) { 2/(1/a+1/b) }
+
+## Accuracy
+#' @keywords internal
+Acc <- function(ct) sum(diag(ct))/sum(ct)
+
+## Precision
+#' @keywords internal
+Prec <- function(ct) ct[1,1]/sum(ct[,1])
+
+## Recall
+#' @keywords internal
+Rec <-  function(ct) ct[1,1]/sum(ct[1,])
+
+## F1
+#' @keywords internal
+F1 <-  function(Prec,Rec) 2*Prec*Rec/(Prec+Rec)
+

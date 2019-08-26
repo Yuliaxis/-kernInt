@@ -27,7 +27,7 @@ classify(data, y, classes = 2, kernel, p = 0.8, C, k = 10,
 \item{type}{Procedure to data oversampling ("ubOver" or "ubSMOTE")}
 }
 \value{
-The test error (accuracy)
+Confusion matrix
 }
 \description{
 SVM classifier

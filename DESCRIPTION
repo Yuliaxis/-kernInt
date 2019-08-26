@@ -18,7 +18,8 @@ Imports:
     catkern,
     graphics,
     methods,
-    unbalanced
+    unbalanced,
+    ROSE
 Suggests: 
     knitr,
     rmarkdown
