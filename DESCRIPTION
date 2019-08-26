@@ -17,7 +17,8 @@ Imports:
     ggplot2,
     catkern,
     graphics,
-    methods
+    methods,
+    unbalanced
 Suggests: 
     knitr,
     rmarkdown

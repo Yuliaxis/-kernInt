@@ -8,7 +8,7 @@
 #' @param nu Hyperparameter nu
 #' @return The indexes of the outliers
 #' @examples
-#' outliers(data=MGXdata[,7:ncol(MGXdata)],kernel="qJac",nu=0.9)
+#' outliers(data=speMGX[,7:ncol(speMGX)],kernel="qJac",nu=0.9)
 #' @importFrom kernlab ksvm predict
 #' @export
 

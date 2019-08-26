@@ -6,4 +6,4 @@
 #'
 #' @format A data frame with 84 rows and 328 variables:
 #' @source \url{https://ibdmdb.org/tunnel/public/HMP2/WGS/1818/products}
-"MGXdata"
+"speMGX"

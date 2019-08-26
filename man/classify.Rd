@@ -4,11 +4,13 @@
 \alias{classify}
 \title{SVM classifier}
 \usage{
-classify(data, classes = 2, kernel, p = 0.8, C, k = 10,
-  classimb = "no")
+classify(data, y, classes = 2, kernel, p = 0.8, C, k = 10,
+  classimb = "no", type = "ubOver")
 }
 \arguments{
 \item{data}{Input data}
+
+\item{y}{Reponse variable (categoric)}
 
 \item{classes}{Number of classes (2 or 3)}
 
@@ -20,7 +22,9 @@ classify(data, classes = 2, kernel, p = 0.8, C, k = 10,
 
 \item{k}{The k for the k-Cross Validation. Minimum k = 2.}
 
-\item{classimb}{"weights" to introduce class weights in the SVM algorithm and "data" to oversampling. If no argument provided, nothing is done.}
+\item{classimb}{"weights" to introduce class weights in the SVM algorithm and "data" to oversampling. If other arguments are provided nothing is done.}
+
+\item{type}{Procedure to data oversampling ("ubOver" or "ubSMOTE")}
 }
 \value{
 The test error (accuracy)
@@ -29,5 +33,6 @@ The test error (accuracy)
 SVM classifier
 }
 \examples{
-classify(data=MGXdata,kernel="qJac",C=c(0.0001,0.001),k=10)
+classify(data=speMGX[,7:ncol(speMGX)],speMGX[,1],kernel="qJac",C=c(0.1,1),k=10)
+classify(data=speMGX[,7:ncol(speMGX)],speMGX[,1],kernel="qJac",C=1,classimb="data", type="ubOver")
 }

@@ -2,29 +2,31 @@
 
 #' SVM classifier
 #'
-#'
 #' @param data Input data
+#' @param y Reponse variable (categoric)
 #' @param classes Number of classes (2 or 3)
 #' @param kernel "qJac" for quantitative Jaccard and "wqJacc" for quant Jaccard with weights
 #' @param p Proportion of total data instances in the training set
 #' @param C A vector with the possible costs to evaluate via k-Cross-Val. If no argument is provided cross-validation is not performed.
 #' @param k The k for the k-Cross Validation. Minimum k = 2.
-#' @param classimb "weights" to introduce class weights in the SVM algorithm and "data" to oversampling. If no argument provided, nothing is done.
+#' @param classimb "weights" to introduce class weights in the SVM algorithm and "data" to oversampling. If other arguments are provided nothing is done.
+#' @param type Procedure to data oversampling ("ubOver" or "ubSMOTE")
 #' @return The test error (accuracy)
 #' @examples
-#' classify(data=MGXdata,kernel="qJac",C=c(0.0001,0.001),k=10)
+#' classify(data=speMGX[,7:ncol(speMGX)],speMGX[,1],kernel="qJac",C=c(0.1,1),k=10)
+#' classify(data=speMGX[,7:ncol(speMGX)],speMGX[,1],kernel="qJac",C=1,classimb="data", type="ubOver")
 #' @importFrom kernlab SVindex as.kernelMatrix predict
+#' @importFrom unbalanced ubBalance
 #' @export
 
 
 
 
-classify <- function(data,classes=2, kernel, p=0.8, C, k=10,  classimb="no") {
+classify <- function(data, y, classes=2, kernel, p=0.8, C, k=10,  classimb="no", type="ubOver") {
 
   # 1. Classes
-  diagn <- as.numeric(data[,1])
+  diagn <- as.numeric(y)
   if(classes == 2)   diagn[diagn == 3] <- 1 # De 3 a 2 classes: No Malalt /  malalt
-  diagn[diagn == 2] <- 0
   diagn <- as.factor(diagn)
 
   # 1. TR/TE
@@ -37,19 +39,33 @@ classify <- function(data,classes=2, kernel, p=0.8, C, k=10,  classimb="no") {
   nlearn <- length(learn.indexes)
   ntest <- N - nlearn
 
+  if(classimb=="data")  {
+    dades <- data[c(learn.indexes,test.indexes),]
+    diagn <- diagn[c(learn.indexes,test.indexes)]
+    print(summary(diagn))
+
+    if(type == "ubOver")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2,  k=0)
+    if(type == "ubSMOTE")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2,percOver = 200)
+
+    data <- rbind(SobrDadesTr$X,dades[(nlearn+1):N,])
+    nlearn <- length(SobrDadesTr$Y)
+    N <- nrow(data)
+    diagn <- c(SobrDadesTr$Y, diagn[test.indexes])
+    print(diagn)
+    learn.indexes <- 1:nlearn
+    test.indexes <- (nlearn+1):N
+  }
+
 
   # 2. Compute kernel matrix
   if(kernel == "qJac") {
-    Jmatrix <- qJacc(data[,7:ncol(data)]) ##ATENCIÓ CANVIAR!!!!
+    Jmatrix <- qJacc(data)
   } else if(kernel == "wqJac") {
-    Jmatrix <- wqJacc(data[,7:ncol(data)],y=data[,1])
+    Jmatrix <- wqJacc(data,y=diagn)
   } else {
 
   }
   trMatrix <- Jmatrix[learn.indexes,learn.indexes]
-
-  #3. Class imbalance
-
 
   # 4. Do R x k-Cross Validation
   if(hasArg(C)) {
@@ -60,11 +76,9 @@ classify <- function(data,classes=2, kernel, p=0.8, C, k=10,  classimb="no") {
     cost <- 1
   }
 
-  if(classimb=="data")  {
-
-  } else if(classimb == "weights") {
+  if(classimb == "weights") {
     model <- ksvm(trMatrix, diagn[learn.indexes], kernel="matrix", type="C-svc",
-                  C=cost,class.weights=c("1"=summary(diagn[learn.indexes])[1],"0"=summary(diagn[learn.indexes])[2]))
+                  C=cost,class.weights=c("1"=summary(diagn[learn.indexes])[2],"2"=summary(diagn[learn.indexes])[1]))
   } else {
     model <- ksvm(trMatrix, diagn[learn.indexes], kernel="matrix", type="C-svc",C=cost )
   }
@@ -78,10 +92,9 @@ classify <- function(data,classes=2, kernel, p=0.8, C, k=10,  classimb="no") {
 
   ### Confusion matrix
   print(ct <- table(Truth=diagn[test.indexes], Pred=pred))
-
+  print(prop.table(ct,1))
   # Test error
   te.error <- round(1-sum(diag(ct))/sum(ct),4)
-
 
   return(te.error)
 }
