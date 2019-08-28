@@ -62,13 +62,22 @@ Acc <- function(ct) sum(diag(ct))/sum(ct)
 
 ## Precision
 #' @keywords internal
-Prec <- function(ct) ct[1,1]/sum(ct[,1])
+Prec <- function(ct) {
+  pr <- ct[2,2]/sum(ct[,2])
+  if(is.nan(pr)) pr <- 0
+  return(pr)
+}
 
 ## Recall
 #' @keywords internal
-Rec <-  function(ct) ct[1,1]/sum(ct[1,])
+Rec <-  function(ct) {
+  rc <- ct[2,2]/sum(ct[2,])
+  if(is.nan(rc)) rc <- 0
+  return(rc)
+}
 
 ## F1
 #' @keywords internal
-F1 <-  function(Prec,Rec) 2*Prec*Rec/(Prec+Rec)
+F1 <-  function(Prec,Rec) { (2*Prec*Rec)/(Prec+Rec) }
+######
 

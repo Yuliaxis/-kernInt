@@ -66,3 +66,30 @@ wqJacc <- function(data, w, y) {
   weidata <- t(w * t(data))
   return(qJacc(data=weidata))
 }
+
+#' Kernel clr versió cutre
+#'
+#' 1 - aitchison distance / max(aitchison distance)
+#'
+#' @param data A matrix or data.frame containing only positive values.
+#' @return Aitchison matrix
+#' @examples
+#' example <- matrix(abs(rnorm(12)),nrow=4,ncol=3)
+#' qJaccMatrix <- aitch(data=example)
+#' @importFrom robCompositions cenLR
+#' @importFrom stats dist
+#' @export
+#'
+#'
+#'
+aitch <- function(data) {
+  minv <- min(  data[data!=min(data)] )
+  minv <- minv/10
+  clrEucl <- cenLR(data+minv)
+  clrPROK <- clrEucl$x.clr
+  clrEucli <- dist(clrPROK, method = "euclidean")
+  clrEucli <-  as.matrix(clrEucli)
+
+  #aproximació cutre
+  clrK <- 1 - clrEucli /max(clrEucli)
+}

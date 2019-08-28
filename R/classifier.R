@@ -5,7 +5,7 @@
 #' @param data Input data
 #' @param y Reponse variable (categoric)
 #' @param classes Number of classes (2 or 3)
-#' @param kernel "qJac" for quantitative Jaccard and "wqJacc" for quant Jaccard with weights
+#' @param kernel "aitch" for Aitchison, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights
 #' @param p Proportion of total data instances in the training set
 #' @param C A vector with the possible costs to evaluate via k-Cross-Val. If no argument is provided cross-validation is not performed.
 #' @param k The k for the k-Cross Validation. Minimum k = 2.
@@ -23,7 +23,7 @@
 
 
 
-classify <- function(data, y, classes=2, kernel, p=0.8, C, k=10,  classimb="no", type="ubOver") {
+classify <- function(data, y, classes=2, kernel, p=0.8, C=1, k,  classimb="no", type="ubOver") {
 
   # 1. Classes
   diagn <- as.numeric(y)
@@ -47,11 +47,11 @@ classify <- function(data, y, classes=2, kernel, p=0.8, C, k=10,  classimb="no",
 
     if(type == "ubOver")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2,  k=0)
     if(type == "ubSMOTE")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
-
     data <- rbind(SobrDadesTr$X,dades[(nlearn+1):N,])
     nlearn <- length(SobrDadesTr$Y)
     N <- nrow(data)
     diagn <- c(SobrDadesTr$Y, diagn[test.indexes])
+    diagn <- as.factor(diagn)
     print(diagn)
     learn.indexes <- 1:nlearn
     test.indexes <- (nlearn+1):N
@@ -60,21 +60,28 @@ classify <- function(data, y, classes=2, kernel, p=0.8, C, k=10,  classimb="no",
 
   # 2. Compute kernel matrix
   if(kernel == "qJac") {
+    cat("quantJaccard kernel \n")
     Jmatrix <- qJacc(data)
   } else if(kernel == "wqJac") {
     Jmatrix <- wqJacc(data,y=diagn)
+    cat("quantJaccard kernel + weights \n")
+
   } else {
+    Jmatrix <- aitch(data)
+    cat("Aitchison \n")
 
   }
+
   trMatrix <- Jmatrix[learn.indexes,learn.indexes]
 
   # 4. Do R x k-Cross Validation
-  if(hasArg(C)) {
+  if(hasArg(k)) {
     if(k<2) stop("k must be equal to or higher than 2")
     bh <- kCV(COST = C, K=trMatrix, Yresp=diagn[learn.indexes], k=k, R=k)
     cost <- bh$cost
   } else {
-    cost <- 1
+    if(length(C)>1) paste("C > 1 - Only the first element will be used")
+    cost <- C[1]
   }
 
   if(classimb == "weights") {
@@ -89,6 +96,9 @@ classify <- function(data, y, classes=2, kernel, p=0.8, C, k=10,  classimb="no",
 
   teMatrix <- teMatrix[,SVindex(model),drop=FALSE]
   teMatrix <- as.kernelMatrix(teMatrix)
+
+  levels(diagn) <- c("1","2")
+
   pred <- kernlab::predict(model,teMatrix)
 
   ### Confusion matrix
@@ -96,11 +106,13 @@ classify <- function(data, y, classes=2, kernel, p=0.8, C, k=10,  classimb="no",
   cat(paste("Accuracy:",round(Acc(ct),digits=4),"\n"))
   pr <- Prec(ct)
   cat(paste("Precision:",round(pr,digits=4),"\n"))
-  rc <- Rec(ct)
+  rc <- ct[2,2]/sum(ct[2,])
   cat(paste("Recall:",round(rc,digits=4),"\n"))
-  cat(paste("F1:",round(F1(Prec=pr,Rec=rc),digits=4),"\n"))
+  f1 <- F1(Prec=pr,Rec=rc)
+  cat(paste("F1:",round(f1,digits=4),"\n"))
+  print(ct)
+  # AUC <- roc.curve(diagn[test.indexes], pred)
+  # print(AUC$auc)
 
-  print(roc.curve(diagn[test.indexes], pred))
-
-  return(ct)
+  return(f1)
 }

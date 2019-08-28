@@ -13,13 +13,14 @@ Encoding: UTF-8
 LazyData: true
 Depends: R(>= 3.4)
 Imports: 
-    kernlab,
-    ggplot2,
     catkern,
+    ggplot2,
     graphics,
+    kernlab,
     methods,
-    unbalanced,
-    ROSE
+    robCompositions,
+    ROSE,
+    unbalanced
 Suggests: 
     knitr,
     rmarkdown
