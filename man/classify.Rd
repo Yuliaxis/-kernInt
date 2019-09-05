@@ -26,7 +26,7 @@ classify(data, y, classes = 2, kernel, g = 1, p = 0.8, C = 1, k,
 
 \item{classimb}{"weights" to introduce class weights in the SVM algorithm and "data" to oversampling. If other arguments are provided nothing is done.}
 
-\item{type}{Procedure to data oversampling ("ubOver" or "ubSMOTE")}
+\item{type}{Procedure to data oversampling ("ubOver","ubUnder" or "ubSMOTE")}
 }
 \value{
 Confusion matrix

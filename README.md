@@ -53,9 +53,26 @@ In R console:
 
 Plotting the kernel PCA: 
 
-`cplot(cRBFmatrix,y=soilMetaData$ph[-89], col=c("aquamarine2","orchid3"),title = "Soil - AitchisonRBF PCA",legend = TRUE)`
+`cplot(cRBFmatrix,y=soilMetaData$ph[-89], col=c("aquamarine2","orchid3"),title = "Soil - Aitchison RBF kPCA",legend = TRUE)`
 
 A gradient from more acid (greenish) soils to more basic (violet) soils can be observed.
+
+We can also try the non-compositional kernels like quantitative Jaccard:
+
+We first perform a Cumulative Sum Scaling normalisation (CSS):
+
+`soilData <- kernInt::CSSnorm(data=t(soilDataRaw[-89,]))`
+
+`Jmatrix <- qJacc(soilData)`
+
+`cplot(Jmatrix,y=soilMetaData$ph[-89], col=c("aquamarine2","orchid3"),title = "Soil - Ruzicka kPCA",legend = TRUE)`
+
+or with weights:
+
+`wJmatrix <- wqJacc(soilData,y=soilMetaData$ph[-89])`
+
+`cplot(wJmatrix,y=soilMetaData$ph[-89], col=c("aquamarine2","orchid3"),title = "Soil - weighted Ruzicka kPCA",legend = TRUE)`
+
 
 ### Clustering
 
@@ -75,7 +92,7 @@ Plotting the dendogram:
 
 Three different colors to represent acid pH, "medium" pH and basic pH: 
 
-`rect.hclust(clustering , k = 3, border = c("aquamarine2", "azure3","orchid3"))`
+`rect.hclust(clustering , k = 3, border = c("aquamarine2", "orchid3","azure3"))`
 
 ### Outlier detection
 
@@ -92,3 +109,9 @@ We can perform k-Cross Validation to train the hyperparameters (Cost):
 
 `regress(data=soilDataRaw[-89,], y=soilMetaData$ph[-89], kernel="cRBF", C=c(0.1,1,10), k=10, p=0.8)`
 
+### SVM classification
+
+We want to predict if a certain individual has IBD or not.
+Being `cRBF` the Aitchison RBF kernel and `p` the proportion of data instances for the training set:
+
+`classify(data=speMGX[,7:ncol(speMGX)],y=speMGX[,1],kernel="cRBF",C=1,classimb="data", type="ubOver)`

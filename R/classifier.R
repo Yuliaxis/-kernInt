@@ -11,7 +11,7 @@
 #' @param C A vector with the possible costs to evaluate via k-Cross-Val. If no argument is provided cross-validation is not performed.
 #' @param k The k for the k-Cross Validation. Minimum k = 2.
 #' @param classimb "weights" to introduce class weights in the SVM algorithm and "data" to oversampling. If other arguments are provided nothing is done.
-#' @param type Procedure to data oversampling ("ubOver" or "ubSMOTE")
+#' @param type Procedure to data oversampling ("ubOver","ubUnder" or "ubSMOTE")
 #' @return Confusion matrix
 #' @examples
 #' classify(data=speMGX[,7:ncol(speMGX)],speMGX[,1],kernel="qJac",C=c(0.1,1),k=10)
@@ -46,6 +46,7 @@ classify <- function(data, y, classes=2, kernel, g=1, p=0.8, C=1, k,  classimb="
     print(summary(diagn))
 
     if(type == "ubOver")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2,  k=0)
+    if(type == "ubUnder")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
     if(type == "ubSMOTE")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
     data <- rbind(SobrDadesTr$X,dades[(nlearn+1):N,])
     nlearn <- length(SobrDadesTr$Y)

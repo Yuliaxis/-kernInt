@@ -4,6 +4,7 @@
 #'
 #'
 #' @param data Input data
+#' @param y Reponse variable
 #' @param kernel "qJac" for quantitative Jaccard and "wqJacc" for quant Jaccard with weights
 #' @param nu Hyperparameter nu
 #' @return The indexes of the outliers
@@ -13,7 +14,7 @@
 #' @export
 
 
-outliers <- function(data,kernel,nu) {
+outliers <- function(data,y,kernel,nu) {
 
   if(kernel == "qJac") {
     Jmatrix <- qJacc(data)
