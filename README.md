@@ -16,6 +16,7 @@
 In R console:  
 															
 `install.packages("devtools")`
+
 `devtools::install_bitbucket("elies_ramon/kernint")`
 
 ## Package Overview
@@ -31,11 +32,15 @@ In R console:
 ### Example data
 
 [**Soil data**](https://qiita.ucsd.edu/study/description/103)
+
 - `soilDataRaw`: Bacterial abundances (raw counts) in 89 soils from across North and South America. 
+
 - `soilMetaData`: Soil pH, annual season precipitation and temperature, country, elevation, etc.
  
 [**IBDMDB** ](https://ibdmdb.org/tunnel/public/HMP2/WGS/1818/products)
+
 - `speMGX`: Species abundances of intestinal microbiota of 84 individuals, 41 with Chron's Disease, 24 with Ulcerative Colitis, and 19 without inflamatory inflammatory bowel disease.
+
 - `genMGX`: Genus abundances of intestinal microbiota of 84 individuals, 41 with Chron's Disease, 24 with Ulcerative Colitis, and 19 without inflamatory inflammatory bowel disease.
  
 ## Usage
@@ -44,13 +49,13 @@ In R console:
 
 `library(catkern)`
 
-`cRBFmatrix <- clrRBF(soilData[-89,])`
+`cRBFmatrix <- clrRBF(soilDataRaw[-89,])`
 
 Plotting the kernel PCA: 
 
 `cplot(cRBFmatrix,y=soilMetaData$ph[-89], col=c("aquamarine2","orchid3"),title = "Soil - AitchisonRBF PCA",legend = TRUE)`
 
-A gradient of more acid (greenish) soils to more basic (violet) soils can be observed.
+A gradient from more acid (greenish) soils to more basic (violet) soils can be observed.
 
 ### Clustering
 
