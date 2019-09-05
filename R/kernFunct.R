@@ -67,29 +67,47 @@ wqJacc <- function(data, w, y) {
   return(qJacc(data=weidata))
 }
 
-#' Kernel clr versió cutre
+#' Aitchison distance kernel
 #'
-#' 1 - aitchison distance / max(aitchison distance)
+#' Aitchison distance kernel
 #'
 #' @param data A matrix or data.frame containing only positive values.
-#' @return Aitchison matrix
+#' @return Aitchison distance matrix
 #' @examples
 #' example <- matrix(abs(rnorm(12)),nrow=4,ncol=3)
-#' qJaccMatrix <- aitch(data=example)
+#' aitch.dist(data=example)
 #' @importFrom robCompositions cenLR
 #' @importFrom stats dist
 #' @export
 #'
-#'
-#'
-aitch <- function(data) {
+
+aitch.dist <- function(data) {
   minv <- min(  data[data!=min(data)] )
   minv <- minv/10
   clrEucl <- cenLR(data+minv)
   clrPROK <- clrEucl$x.clr
-  clrEucli <- dist(clrPROK, method = "euclidean")
-  clrEucli <-  as.matrix(clrEucli)
-
-  #aproximació cutre
-  clrK <- 1 - clrEucli /max(clrEucli)
+  aitch <- dist(clrPROK, method = "euclidean",diag=TRUE,upper = TRUE)
+  return(as.matrix(aitch))
 }
+
+
+#' clr transf + RBF kernel
+#'
+#' clr transf + RBF kernel
+#'
+#' @param data A matrix or data.frame containing only positive values.
+#' @param g Gamma hyperparameter
+#' @return RBF kernel over a clr transformated data
+#' @examples
+#' example <- matrix(abs(rnorm(12)),nrow=4,ncol=3)
+#' kernelMatrix <- clrRBF(data=example)
+#' @importFrom robCompositions cenLR
+#' @importFrom stats dist
+#' @export
+#'
+
+clrRBF <- function(data,g=0.0001) {
+  aitch <- aitch.dist(data)
+  return(exp(-g*(aitch^2))) #RBF
+}
+

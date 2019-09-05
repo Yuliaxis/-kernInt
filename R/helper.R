@@ -24,7 +24,7 @@ trainIndx <- function(n, ptrain = 0.8) {
 #' @keywords internal
 #' @importFrom kernlab ksvm cross
 
-kCV <- function(COST, K, Yresp, k, R) {
+kCV <- function(COST, K, Yresp, k, R,classimb=FALSE) {
 
   # on Y és el vector resposta, i K.train la submatriu amb els individus de training
   min.error <- Inf
@@ -37,7 +37,13 @@ kCV <- function(COST, K, Yresp, k, R) {
         unordered <- sample.int(nrow(Kmatrix))
         Kmatrix <- Kmatrix[unordered,unordered]
         Y <- Y[unordered]
-        K.model <- ksvm(Kmatrix, Y, type="C-svc",kernel="matrix",C=c,cross=k) # Rular el mètode
+        if(classimb)  {
+          K.model <- ksvm(Kmatrix, Y, type="C-svc",kernel="matrix",C=c,cross=k,
+                                     class.weights=c("1"=19,"2"=65)) # Rular el mètode
+        } else {
+          K.model <- ksvm(Kmatrix, Y, type="C-svc",kernel="matrix",C=c,cross=k) # Rular el mètode
+
+        }
         outer.error[o] <- cross(K.model) # La mitjana dels errors és l'error de CV
       }
       v.error <- mean(outer.error)
@@ -49,6 +55,45 @@ kCV <- function(COST, K, Yresp, k, R) {
     }
   best.hyp <- data.frame(cost=best.cost,error= min.error)
   return(best.hyp)
+}
+
+## K-fold cross- validation (regression)
+#' @keywords internal
+#' @importFrom kernlab ksvm cross
+
+kCV.reg <- function(COST, K, Yresp, k, R) {
+
+  # on Y és el vector resposta, i K.train la submatriu amb els individus de training
+  min.error <- Inf
+
+  for (c in COST){
+    Kmatrix <- K
+    Y <- Yresp
+    outer.error <- vector(mode="numeric",length=R)
+    for (o in 1:R) {
+      unordered <- sample.int(nrow(Kmatrix))
+      Kmatrix <- Kmatrix[unordered,unordered]
+      Y <- Y[unordered]
+      K.model <- ksvm(Kmatrix, Y, type="eps-svr",kernel="matrix",C=c,cross=k) # Rular el mètode
+      outer.error[o] <- cross(K.model) # La mitjana dels errors és l'error de CV
+    }
+    v.error <- mean(outer.error)
+    print(v.error)
+    if (min.error > v.error) {   # < o <= ???
+      min.error <- v.error
+      best.cost <- c
+    }
+  }
+  best.hyp <- data.frame(cost=best.cost,error= min.error)
+  return(best.hyp)
+}
+
+##  NMSE (regression)
+#' @keywords internal
+error.norm <- function(target,prediction) {
+  N <- length(target)
+  error <- sum((target-prediction)^2)/((N-1)*var(target)) ##(norm.mse <- model$deviance/((N-1)*var(target)))
+  return(error)
 }
 
 

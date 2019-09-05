@@ -4,7 +4,7 @@
 \alias{classify}
 \title{SVM classifier}
 \usage{
-classify(data, y, classes = 2, kernel, p = 0.8, C = 1, k,
+classify(data, y, classes = 2, kernel, g = 1, p = 0.8, C = 1, k,
   classimb = "no", type = "ubOver")
 }
 \arguments{
@@ -14,7 +14,9 @@ classify(data, y, classes = 2, kernel, p = 0.8, C = 1, k,
 
 \item{classes}{Number of classes (2 or 3)}
 
-\item{kernel}{"aitch" for Aitchison, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights}
+\item{kernel}{"cRBF" for clrRBF, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights}
+
+\item{g}{Gamma hyperparameter}
 
 \item{p}{Proportion of total data instances in the training set}
 

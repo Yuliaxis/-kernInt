@@ -5,7 +5,8 @@
 #' @param data Input data
 #' @param y Reponse variable (categoric)
 #' @param classes Number of classes (2 or 3)
-#' @param kernel "aitch" for Aitchison, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights
+#' @param kernel "cRBF" for clrRBF, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights
+#' @param g Gamma hyperparameter
 #' @param p Proportion of total data instances in the training set
 #' @param C A vector with the possible costs to evaluate via k-Cross-Val. If no argument is provided cross-validation is not performed.
 #' @param k The k for the k-Cross Validation. Minimum k = 2.
@@ -15,15 +16,14 @@
 #' @examples
 #' classify(data=speMGX[,7:ncol(speMGX)],speMGX[,1],kernel="qJac",C=c(0.1,1),k=10)
 #' classify(data=speMGX[,7:ncol(speMGX)],speMGX[,1],kernel="qJac",C=1,classimb="data", type="ubOver")
-#' @importFrom kernlab SVindex as.kernelMatrix predict
+#' @importFrom kernlab as.kernelMatrix kernelMatrix predict rbfdot SVindex
 #' @importFrom unbalanced ubBalance
 #' @importFrom ROSE roc.curve
 #' @export
 
 
 
-
-classify <- function(data, y, classes=2, kernel, p=0.8, C=1, k,  classimb="no", type="ubOver") {
+classify <- function(data, y, classes=2, kernel, g=1, p=0.8, C=1, k,  classimb="no", type="ubOver") {
 
   # 1. Classes
   diagn <- as.numeric(y)
@@ -55,7 +55,7 @@ classify <- function(data, y, classes=2, kernel, p=0.8, C=1, k,  classimb="no", 
     print(diagn)
     learn.indexes <- 1:nlearn
     test.indexes <- (nlearn+1):N
-  }
+   }
 
 
   # 2. Compute kernel matrix
@@ -66,18 +66,27 @@ classify <- function(data, y, classes=2, kernel, p=0.8, C=1, k,  classimb="no", 
     Jmatrix <- wqJacc(data,y=diagn)
     cat("quantJaccard kernel + weights \n")
 
-  } else {
-    Jmatrix <- aitch(data)
-    cat("Aitchison \n")
+  }  else if(kernel == "cRBF") {
+    Jmatrix <- clrRBF(data)
+    cat("clr + RBF \n")
+
+  }   else {
+    cat("standard RBF \n")
+
+    # Jmatrix <-  kernelMatrix(rbfdot(sigma = g),data)
 
   }
 
   trMatrix <- Jmatrix[learn.indexes,learn.indexes]
 
+  diagn <- as.numeric(diagn)   ############# culpa weights
+
+
   # 4. Do R x k-Cross Validation
   if(hasArg(k)) {
     if(k<2) stop("k must be equal to or higher than 2")
     bh <- kCV(COST = C, K=trMatrix, Yresp=diagn[learn.indexes], k=k, R=k)
+    if(classimb == "weights")bh <- kCV(COST = C, K=trMatrix, Yresp=diagn[learn.indexes], k=k, R=k,classimb=TRUE)
     cost <- bh$cost
   } else {
     if(length(C)>1) paste("C > 1 - Only the first element will be used")
@@ -85,8 +94,10 @@ classify <- function(data, y, classes=2, kernel, p=0.8, C=1, k,  classimb="no", 
   }
 
   if(classimb == "weights") {
+
     model <- ksvm(trMatrix, diagn[learn.indexes], kernel="matrix", type="C-svc",
-                  C=cost,class.weights=c("1"=summary(diagn[learn.indexes])[2],"2"=summary(diagn[learn.indexes])[1]))
+                  C=cost,class.weights=c("1"=19,"2"=65))
+    diagn <- as.factor(diagn)
   } else {
     model <- ksvm(trMatrix, diagn[learn.indexes], kernel="matrix", type="C-svc",C=cost )
   }
@@ -98,11 +109,14 @@ classify <- function(data, y, classes=2, kernel, p=0.8, C=1, k,  classimb="no", 
   teMatrix <- as.kernelMatrix(teMatrix)
 
   levels(diagn) <- c("1","2")
-
-  pred <- kernlab::predict(model,teMatrix)
+   pred <- kernlab::predict(model,teMatrix)
+   pred <- as.factor(pred)
+   levels(pred) <- c("1","2")
+   print(pred)
 
   ### Confusion matrix
   ct <- table(Truth=diagn[test.indexes], Pred=pred)
+  print(ct)
   cat(paste("Accuracy:",round(Acc(ct),digits=4),"\n"))
   pr <- Prec(ct)
   cat(paste("Precision:",round(pr,digits=4),"\n"))
