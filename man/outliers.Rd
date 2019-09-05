@@ -20,5 +20,5 @@ The indexes of the outliers
 SVM outlier detection
 }
 \examples{
-outliers(data=speMGX[,7:ncol(speMGX)],kernel="qJac",nu=0.9)
+outliers(data=soilDataRaw,kernel="cRBF",nu=0.9)
 }

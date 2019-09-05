@@ -11,10 +11,8 @@
 #' @param k The k for the k-Cross Validation. Minimum k = 2.
 #' @return NMSE (normalized mean squared error)
 #' @examples
-# regress(data=speMGX[,7:ncol(speMGX)],speMGX[,1],kernel="qJac",C=c(0.1,1),k=10)
+#' regress(data=soilDataRaw[-89,],soilMetaData$ph[-89],kernel="cRBF",C=c(1,10,50),k=10)
 #' @importFrom kernlab as.kernelMatrix kernelMatrix predict rbfdot SVindex
-#' @importFrom unbalanced ubBalance
-#' @importFrom ROSE roc.curve
 #' @export
 
 regress <- function(data, y, kernel, g=1, p=0.8, C=1, k) {
@@ -22,10 +20,8 @@ regress <- function(data, y, kernel, g=1, p=0.8, C=1, k) {
   # 1. TR/TE
   N <- nrow(data)
   all.indexes <- 1:N
-
   learn.indexes <- trainIndx(n=N,ptrain=p)
   test.indexes <- all.indexes[-learn.indexes]
-
   nlearn <- length(learn.indexes)
   ntest <- N - nlearn
 
@@ -36,11 +32,9 @@ regress <- function(data, y, kernel, g=1, p=0.8, C=1, k) {
   } else if(kernel == "wqJac") {
     Jmatrix <- wqJacc(data,y=y)
     cat("quantJaccard kernel + weights \n")
-
   }  else if(kernel == "cRBF") {
     Jmatrix <- clrRBF(data)
     cat("clr + RBF \n")
-
   }   else {
     cat("standard RBF \n")
 
@@ -49,7 +43,6 @@ regress <- function(data, y, kernel, g=1, p=0.8, C=1, k) {
   }
 
   trMatrix <- Jmatrix[learn.indexes,learn.indexes]
-
 
   # 4. Do R x k-Cross Validation
   if(hasArg(k)) {
@@ -63,10 +56,8 @@ regress <- function(data, y, kernel, g=1, p=0.8, C=1, k) {
 
   model <- ksvm(trMatrix, y[learn.indexes],type="eps-svr", kernel="matrix", C=cost )
 
-
   # 5. Prediction
   teMatrix <- Jmatrix[test.indexes,learn.indexes]
-
   teMatrix <- teMatrix[,SVindex(model),drop=FALSE]
   teMatrix <- as.kernelMatrix(teMatrix)
   pred <- kernlab::predict(model,teMatrix)

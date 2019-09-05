@@ -27,3 +27,6 @@ NMSE (normalized mean squared error)
 \description{
 SVM regression
 }
+\examples{
+regress(data=soilDataRaw[-89,],soilMetaData$ph[-89],kernel="cRBF",C=c(1,10,50),k=10)
+}
