@@ -4,7 +4,7 @@
 \alias{classify}
 \title{SVM classifier}
 \usage{
-classify(data, y, classes = 2, kernel, g = 1, p = 0.8, C = 1, k,
+classify(data, y, kernel, p = 0.8, C = 1, G = 0, k, prob = FALSE,
   classimb = "no", type = "ubOver")
 }
 \arguments{
@@ -12,17 +12,17 @@ classify(data, y, classes = 2, kernel, g = 1, p = 0.8, C = 1, k,
 
 \item{y}{Reponse variable (categoric)}
 
-\item{classes}{Number of classes (2 or 3)}
-
 \item{kernel}{"cRBF" for clrRBF, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights}
-
-\item{g}{Gamma hyperparameter}
 
 \item{p}{Proportion of total data instances in the training set}
 
 \item{C}{A vector with the possible costs to evaluate via k-Cross-Val. If no argument is provided cross-validation is not performed.}
 
+\item{G}{Gamma hyperparameter}
+
 \item{k}{The k for the k-Cross Validation. Minimum k = 2.}
+
+\item{prob}{if TRUE builds a model for calculating class probabilities}
 
 \item{classimb}{"weights" to introduce class weights in the SVM algorithm and "data" to oversampling. If other arguments are provided nothing is done.}
 
@@ -35,6 +35,8 @@ Confusion matrix
 SVM classifier
 }
 \examples{
-classify(data=speMGX[,7:ncol(speMGX)],speMGX[,1],kernel="qJac",C=c(0.1,1),k=10)
-classify(data=speMGX[,7:ncol(speMGX)],speMGX[,1],kernel="qJac",C=1,classimb="data", type="ubOver")
+diag <- as.numeric(speMGX[,1])
+diag[diag == 3] <- 1  # De 3 a 2 classes: No Malalt /  malalt
+classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",C=c(0.1,1),k=10)
+classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",C=1,classimb="data", type="ubOver")
 }

@@ -5,9 +5,10 @@
 #' @param data Input data
 #' @param y Reponse variable (continuous)
 #' @param kernel "cRBF" for clrRBF, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights
-#' @param g Gamma hyperparameter
 #' @param p Proportion of total data instances in the training set
 #' @param C A vector with the possible costs to evaluate via k-Cross-Val. If no argument is provided cross-validation is not performed.
+#' @param G Gamma hyperparameter
+#' @param E Epsilon hyperparameter
 #' @param k The k for the k-Cross Validation. Minimum k = 2.
 #' @return NMSE (normalized mean squared error)
 #' @examples
@@ -15,7 +16,7 @@
 #' @importFrom kernlab as.kernelMatrix kernelMatrix predict rbfdot SVindex
 #' @export
 
-regress <- function(data, y, kernel, g=1, p=0.8, C=1, k) {
+regress <- function(data, y, kernel, p=0.8, C=1, G=0, E=0.1, k) {
 
   # 1. TR/TE
   N <- nrow(data)
@@ -47,7 +48,7 @@ regress <- function(data, y, kernel, g=1, p=0.8, C=1, k) {
   # 4. Do R x k-Cross Validation
   if(hasArg(k)) {
     if(k<2) stop("k must be equal to or higher than 2")
-    bh <- kCV.reg(COST = C, K=trMatrix, Yresp=y[learn.indexes], k=k, R=k)
+    bh <- kCV.reg(GAMMA = G, EPS = E, COST = C, K=trMatrix, Yresp=y[learn.indexes], k=k, R=k)
     cost <- bh$cost
   } else {
     if(length(C)>1) paste("C > 1 - Only the first element will be used")

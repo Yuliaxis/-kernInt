@@ -61,7 +61,7 @@ We can also try the non-compositional kernels like quantitative Jaccard:
 
 We first perform a Cumulative Sum Scaling normalisation (CSS):
 
-`soilData <- kernInt::CSSnorm(data=t(soilDataRaw[-89,]))`
+`soilData <- CSSnorm(data=t(soilDataRaw[-89,]))`
 
 `Jmatrix <- qJacc(soilData)`
 
@@ -90,7 +90,7 @@ Plotting the dendogram:
 
 `clusters <- cutree(clustering, k = 3)`
 
-Three different colors to represent acid pH, "medium" pH and basic pH: 
+Three different colors to represent acid pH, "intermediate" pH and basic pH: 
 
 `rect.hclust(clustering , k = 3, border = c("aquamarine2", "orchid3","azure3"))`
 
@@ -112,6 +112,5 @@ We can perform k-Cross Validation to train the hyperparameters (Cost):
 ### SVM classification
 
 We want to predict if a certain individual has IBD or not.
-Being `cRBF` the Aitchison RBF kernel and `p` the proportion of data instances for the training set:
 
-`classify(data=speMGX[,7:ncol(speMGX)],y=speMGX[,1],kernel="cRBF",C=1,classimb="data", type="ubOver)`
+`classify(data=speMGX[,7:ncol(speMGX)],y=speMGX[,1],kernel="cRBF",C=1,classimb="data", type="ubOver")`

@@ -4,7 +4,7 @@
 \alias{regress}
 \title{SVM regression}
 \usage{
-regress(data, y, kernel, g = 1, p = 0.8, C = 1, k)
+regress(data, y, kernel, p = 0.8, C = 1, G = 0, E = 0.1, k)
 }
 \arguments{
 \item{data}{Input data}
@@ -13,11 +13,13 @@ regress(data, y, kernel, g = 1, p = 0.8, C = 1, k)
 
 \item{kernel}{"cRBF" for clrRBF, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights}
 
-\item{g}{Gamma hyperparameter}
-
 \item{p}{Proportion of total data instances in the training set}
 
 \item{C}{A vector with the possible costs to evaluate via k-Cross-Val. If no argument is provided cross-validation is not performed.}
+
+\item{G}{Gamma hyperparameter}
+
+\item{E}{Epsilon hyperparameter}
 
 \item{k}{The k for the k-Cross Validation. Minimum k = 2.}
 }

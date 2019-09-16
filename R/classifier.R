@@ -4,18 +4,20 @@
 #'
 #' @param data Input data
 #' @param y Reponse variable (categoric)
-#' @param classes Number of classes (2 or 3)
 #' @param kernel "cRBF" for clrRBF, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights
-#' @param g Gamma hyperparameter
 #' @param p Proportion of total data instances in the training set
 #' @param C A vector with the possible costs to evaluate via k-Cross-Val. If no argument is provided cross-validation is not performed.
+#' @param G Gamma hyperparameter
 #' @param k The k for the k-Cross Validation. Minimum k = 2.
+#' @param prob if TRUE builds a model for calculating class probabilities
 #' @param classimb "weights" to introduce class weights in the SVM algorithm and "data" to oversampling. If other arguments are provided nothing is done.
 #' @param type Procedure to data oversampling ("ubOver","ubUnder" or "ubSMOTE")
 #' @return Confusion matrix
 #' @examples
-#' classify(data=speMGX[,7:ncol(speMGX)],speMGX[,1],kernel="qJac",C=c(0.1,1),k=10)
-#' classify(data=speMGX[,7:ncol(speMGX)],speMGX[,1],kernel="qJac",C=1,classimb="data", type="ubOver")
+#' diag <- as.numeric(speMGX[,1])
+#' diag[diag == 3] <- 1  # De 3 a 2 classes: No Malalt /  malalt
+#' classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",C=c(0.1,1),k=10)
+#' classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",C=1,classimb="data", type="ubOver")
 #' @importFrom kernlab as.kernelMatrix kernelMatrix predict rbfdot SVindex
 #' @importFrom unbalanced ubBalance
 #' @importFrom ROSE roc.curve
@@ -23,12 +25,10 @@
 
 
 
-classify <- function(data, y, classes=2, kernel, g=1, p=0.8, C=1, k,  classimb="no", type="ubOver") {
+classify <- function(data, y, kernel,  p=0.8, C=1, G=0, k, prob=FALSE, classimb="no", type="ubOver") {
 
   # 1. Classes
-  diagn <- as.numeric(y)
-  if(classes == 2)   diagn[diagn == 3] <- 1 # De 3 a 2 classes: No Malalt /  malalt
-  diagn <- as.factor(diagn)
+  diagn <- as.factor(y)
 
   # 1. TR/TE
   N <- nrow(data)
@@ -86,8 +86,8 @@ classify <- function(data, y, classes=2, kernel, g=1, p=0.8, C=1, k,  classimb="
   # 4. Do R x k-Cross Validation
   if(hasArg(k)) {
     if(k<2) stop("k must be equal to or higher than 2")
-    bh <- kCV(COST = C, K=trMatrix, Yresp=diagn[learn.indexes], k=k, R=k)
-    if(classimb == "weights")bh <- kCV(COST = C, K=trMatrix, Yresp=diagn[learn.indexes], k=k, R=k,classimb=TRUE)
+    bh <- kCV(COST = C, GAMMA = G, K=trMatrix, prob=prob, Yresp=diagn[learn.indexes], k=k, R=k)
+    if(classimb == "weights")bh <- kCV(COST = C,GAMMA = G, K=trMatrix, Yresp=diagn[learn.indexes], k=k, R=k,classimb=TRUE)
     cost <- bh$cost
   } else {
     if(length(C)>1) paste("C > 1 - Only the first element will be used")
@@ -97,10 +97,10 @@ classify <- function(data, y, classes=2, kernel, g=1, p=0.8, C=1, k,  classimb="
   if(classimb == "weights") {
 
     model <- ksvm(trMatrix, diagn[learn.indexes], kernel="matrix", type="C-svc",
-                  C=cost,class.weights=c("1"=19,"2"=65))
+                  C=cost,GAMMA = G, class.weights=c("1"=19,"2"=65))
     diagn <- as.factor(diagn)
   } else {
-    model <- ksvm(trMatrix, diagn[learn.indexes], kernel="matrix", type="C-svc",C=cost )
+    model <- ksvm(trMatrix, diagn[learn.indexes], prob.model = prob, kernel="matrix", type="C-svc",C=cost,GAMMA = G )
   }
 
   # 5. Prediction
@@ -110,7 +110,11 @@ classify <- function(data, y, classes=2, kernel, g=1, p=0.8, C=1, k,  classimb="
   teMatrix <- as.kernelMatrix(teMatrix)
 
   levels(diagn) <- c("1","2")
-   pred <- kernlab::predict(model,teMatrix)
+  if(prob)  {
+    pred <- predict(model,teMatrix,type = "probabilities")
+    return(cbind(diagn[test.indexes],pred))
+    }
+  else    { pred <- kernlab::predict(model,teMatrix) }
    pred <- as.factor(pred)
    levels(pred) <- c("1","2")
    print(pred)

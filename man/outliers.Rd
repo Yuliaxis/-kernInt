@@ -4,14 +4,18 @@
 \alias{outliers}
 \title{SVM outlier detection}
 \usage{
-outliers(data, kernel, nu)
+outliers(data, y, kernel, nu, p)
 }
 \arguments{
 \item{data}{Input data}
 
+\item{y}{Reponse variable}
+
 \item{kernel}{"qJac" for quantitative Jaccard and "wqJacc" for quant Jaccard with weights}
 
 \item{nu}{Hyperparameter nu}
+
+\item{p}{If a value is provided, outliers() functions as an one-class SVM. p is the proportion of total data instances in the training set}
 }
 \value{
 The indexes of the outliers
@@ -20,5 +24,10 @@ The indexes of the outliers
 SVM outlier detection
 }
 \examples{
-outliers(data=soilDataRaw,kernel="cRBF",nu=0.9)
+outliers(data=soilDataRaw,kernel="cRBF",nu=0.3)
+diag <- as.numeric(speMGX[,1])
+diag[diag == 3] <- 1  # De 3 a 2 classes: No Malalt /  malalt
+diag[diag == 2] <- 0
+diag <- as.numeric(!diag) # No malalt classe 1, malalt classe 0
+outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="cRBF",nu=0.2,p=0.8)
 }

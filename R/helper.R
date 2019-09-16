@@ -24,35 +24,41 @@ trainIndx <- function(n, ptrain = 0.8) {
 #' @keywords internal
 #' @importFrom kernlab ksvm cross
 
-kCV <- function(COST, K, Yresp, k, R,classimb=FALSE) {
+kCV <- function(GAMMA,  COST, K, Yresp, k, R,prob, classimb=FALSE) {
 
   # on Y és el vector resposta, i K.train la submatriu amb els individus de training
   min.error <- Inf
-
-  for (c in COST){
-    Kmatrix <- K
-    Y <- Yresp
-    outer.error <- vector(mode="numeric",length=R)
-      for (o in 1:R) {
-        unordered <- sample.int(nrow(Kmatrix))
-        Kmatrix <- Kmatrix[unordered,unordered]
-        Y <- Y[unordered]
-        if(classimb)  {
-          K.model <- ksvm(Kmatrix, Y, type="C-svc",kernel="matrix",C=c,cross=k,
-                                     class.weights=c("1"=19,"2"=65)) # Rular el mètode
-        } else {
-          K.model <- ksvm(Kmatrix, Y, type="C-svc",kernel="matrix",C=c,cross=k) # Rular el mètode
-
-        }
-        outer.error[o] <- cross(K.model) # La mitjana dels errors és l'error de CV
-      }
-      v.error <- mean(outer.error)
-      print(v.error)
-      if (min.error > v.error) {   # < o <= ???
-         min.error <- v.error
-         best.cost <- c
-       }
+  for (g in GAMMA){
+    if (g == 0) {
+      Kmatrix <- K
+    } else { Kmatrix <- exp(g*K)/exp(g) #Standardized Kernel Matrix. Otherwise exp(g*K)
     }
+
+    for (c in COST){
+        Kmatrix <- K
+        Y <- Yresp
+        outer.error <- vector(mode="numeric",length=R)
+          for (o in 1:R) {
+            unordered <- sample.int(nrow(Kmatrix))
+            Kmatrix <- Kmatrix[unordered,unordered]
+            Y <- Y[unordered]
+            if(classimb)  {
+              K.model <- ksvm(Kmatrix, Y, type="C-svc",kernel="matrix",C=c,cross=k,
+                                         class.weights=c("1"=19,"2"=65)) # Rular el mètode
+            } else {
+              K.model <- ksvm(Kmatrix, Y, type="C-svc",kernel="matrix",prob.model=prob,C=c,cross=k) # Rular el mètode
+
+            }
+            outer.error[o] <- cross(K.model) # La mitjana dels errors és l'error de CV
+          }
+          v.error <- mean(outer.error)
+          print(v.error)
+          if (min.error > v.error) {   # < o <= ???
+             min.error <- v.error
+             best.cost <- c
+          }
+    }
+  }
   best.hyp <- data.frame(cost=best.cost,error= min.error)
   return(best.hyp)
 }
@@ -61,27 +67,34 @@ kCV <- function(COST, K, Yresp, k, R,classimb=FALSE) {
 #' @keywords internal
 #' @importFrom kernlab ksvm cross
 
-kCV.reg <- function(COST, K, Yresp, k, R) {
+kCV.reg <- function(GAMMA, EPS, COST, K, Yresp, k, R) {
 
   # on Y és el vector resposta, i K.train la submatriu amb els individus de training
   min.error <- Inf
-
-  for (c in COST){
-    Kmatrix <- K
-    Y <- Yresp
-    outer.error <- vector(mode="numeric",length=R)
-    for (o in 1:R) {
-      unordered <- sample.int(nrow(Kmatrix))
-      Kmatrix <- Kmatrix[unordered,unordered]
-      Y <- Y[unordered]
-      K.model <- ksvm(Kmatrix, Y, type="eps-svr",kernel="matrix",C=c,cross=k) # Rular el mètode
-      outer.error[o] <- cross(K.model) # La mitjana dels errors és l'error de CV
+  for (g in GAMMA){
+    if (g == 0) {
+      Kmatrix <- K
+    } else { Kmatrix <- exp(g*K)/exp(g) #Standardized Kernel Matrix. Otherwise exp(g*K)
     }
-    v.error <- mean(outer.error)
-    print(v.error)
-    if (min.error > v.error) {   # < o <= ???
-      min.error <- v.error
-      best.cost <- c
+  for (c in COST){
+    for (e in EPS) {
+      Kmatrix <- K
+      Y <- Yresp
+      outer.error <- vector(mode="numeric",length=R)
+      for (o in 1:R) {
+        unordered <- sample.int(nrow(Kmatrix))
+        Kmatrix <- Kmatrix[unordered,unordered]
+        Y <- Y[unordered]
+        K.model <- ksvm(Kmatrix, Y, type="eps-svr",kernel="matrix",C=c,cross=k) # Rular el mètode
+        outer.error[o] <- cross(K.model) # La mitjana dels errors és l'error de CV
+      }
+      v.error <- mean(outer.error)
+      print(v.error)
+      if (min.error > v.error) {   # < o <= ???
+        min.error <- v.error
+        best.cost <- c
+        }
+      }
     }
   }
   best.hyp <- data.frame(cost=best.cost,error= min.error)
