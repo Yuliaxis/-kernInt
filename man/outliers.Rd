@@ -4,7 +4,7 @@
 \alias{outliers}
 \title{SVM outlier detection}
 \usage{
-outliers(data, y, kernel, nu, p)
+outliers(data, y, kernel, nu, p, k, G = 0)
 }
 \arguments{
 \item{data}{Input data}
@@ -16,9 +16,13 @@ outliers(data, y, kernel, nu, p)
 \item{nu}{Hyperparameter nu}
 
 \item{p}{If a value is provided, outliers() functions as an one-class SVM. p is the proportion of total data instances in the training set}
+
+\item{k}{The k for the k-Cross Validation. Minimum k = 2.}
+
+\item{G}{Hyperparameter gamma}
 }
 \value{
-The indexes of the outliers
+The indexes of the outliers (outlier detection) or, if a value is provided for p, the confusion matrix (one-class SVM)
 }
 \description{
 SVM outlier detection
@@ -29,5 +33,5 @@ diag <- as.numeric(speMGX[,1])
 diag[diag == 3] <- 1  # De 3 a 2 classes: No Malalt /  malalt
 diag[diag == 2] <- 0
 diag <- as.numeric(!diag) # No malalt classe 1, malalt classe 0
-outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="cRBF",nu=0.2,p=0.8)
+outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="cRBF",nu=0.2,p=0.8,k=10)
 }

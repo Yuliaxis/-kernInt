@@ -24,7 +24,7 @@ trainIndx <- function(n, ptrain = 0.8) {
 #' @keywords internal
 #' @importFrom kernlab ksvm cross
 
-kCV <- function(GAMMA,  COST, K, Yresp, k, R,prob, classimb=FALSE) {
+kCV <- function(GAMMA, CUT, COST, K, Yresp, k, R,prob, classimb=FALSE) {
 
   # on Y és el vector resposta, i K.train la submatriu amb els individus de training
   min.error <- Inf
@@ -44,23 +44,91 @@ kCV <- function(GAMMA,  COST, K, Yresp, k, R,prob, classimb=FALSE) {
             Y <- Y[unordered]
             if(classimb)  {
               K.model <- ksvm(Kmatrix, Y, type="C-svc",kernel="matrix",C=c,cross=k,
-                                         class.weights=c("1"=19,"2"=65)) # Rular el mètode
+                                         class.weights=c("1"=as.numeric(summary(Yresp)[2]),"2"=as.numeric(summary(Yresp)[2]))) # Rular el mètode
+            } else if (prob) {
+              N <- trunc(nrow(Kmatrix)/k,digits=0)
+              PRED <- matrix(NA,ncol=1,nrow=nrow(Kmatrix))
+              # rownames(PRED) <- as.character(Y)
+              for(p in 0:(k-1)) {
+                if(p < (k-1)) {
+                  indexTE <- (1+(p*N)):((p+1)*N)
+                  } else {
+                  indexTE <- (1+(p*N)):nrow(Kmatrix)
+                  }
+                TEST <- Kmatrix[indexTE,-indexTE]
+                K.model <- ksvm(Kmatrix[-indexTE,-indexTE], Y[-indexTE], type="C-svc",kernel="matrix",prob.model=prob,C=c) # Rular el mètode
+                TEST <- TEST[,SVindex(K.model),drop=FALSE]
+                TEST <- as.kernelMatrix(TEST)
+                pred <- predict(K.model,TEST,type = "probabilities")
+                PRED[indexTE,1] <- pred[,2] #minority class
+              }
+              PRED <- na.omit(PRED)
+              acu <- vector(mode="numeric",length=length(cut))
+              for(cut in 1:length(CUT)) {
+                  pr <- (PRED < CUT[cut])
+                  pr[pr] <- 1
+                  pr[pr==0] <- 2
+                  acu[cut] <- sum(as.numeric(Y) == pr)/nrow(pr) # És ok aquesta aproximació??
+              }
+              cut <- CUT[which.max(acu)]
+              outer.error[o] <- max(acu)
             } else {
               K.model <- ksvm(Kmatrix, Y, type="C-svc",kernel="matrix",prob.model=prob,C=c,cross=k) # Rular el mètode
 
             }
-            outer.error[o] <- cross(K.model) # La mitjana dels errors és l'error de CV
+            if(!prob) outer.error[o] <- cross(K.model) # La mitjana dels errors és l'error de CV
           }
           v.error <- mean(outer.error)
           print(v.error)
           if (min.error > v.error) {   # < o <= ???
              min.error <- v.error
              best.cost <- c
+             best.g <- g
+             best.cut <- cut
           }
     }
   }
-  best.hyp <- data.frame(cost=best.cost,error= min.error)
+  print(best.cut)
+  best.hyp <- data.frame(cost=best.cost,gamma=best.g,cut=best.cut,error= min.error)
   return(best.hyp)
+}
+
+
+## K-fold cross- validation (one-class SVM)
+#' @keywords internal
+#' @importFrom kernlab ksvm cross
+
+kCV.one <- function(GAMMA, K, Yresp, NU, k=k, R=k) {
+  min.error <- Inf
+  for (g in GAMMA){
+    if (g == 0) {
+      Kmatrix <- K
+    } else {
+      Kmatrix <- exp(g*K)/exp(g) #Standardized Kernel Matrix. Otherwise exp(g*K)
+    }
+
+    for (nu in NU) {
+      Kmatrix <- K
+      Y <- Yresp
+      outer.error <- vector(mode="numeric",length=R)
+      for (o in 1:R) {
+        unordered <- sample.int(nrow(Kmatrix))
+        Kmatrix <- Kmatrix[unordered,unordered]
+        Y <- Y[unordered]
+        K.model <- ksvm(Kmatrix, Y, type="one-svc", kernel="matrix",nu=nu,cross=k) # Rular el mètode
+        outer.error[o] <- cross(K.model) # La mitjana dels errors és l'error de CV
+      }
+      v.error <- mean(outer.error)
+      print(v.error)
+      if (min.error > v.error) {   # < o <= ???
+        min.error <- v.error
+        best.h1 <- nu
+        best.h2 <- g
+      }
+    }
+  }
+best.hyp <- data.frame(nu=best.h1,g=best.h2, error= min.error)
+return(best.hyp)
 }
 
 ## K-fold cross- validation (regression)
@@ -122,7 +190,7 @@ Acc <- function(ct) sum(diag(ct))/sum(ct)
 #' @keywords internal
 Prec <- function(ct) {
   pr <- ct[2,2]/sum(ct[,2])
-  if(is.nan(pr)) pr <- 0
+  # if(is.nan(pr)) pr <- 0
   return(pr)
 }
 
@@ -130,12 +198,20 @@ Prec <- function(ct) {
 #' @keywords internal
 Rec <-  function(ct) {
   rc <- ct[2,2]/sum(ct[2,])
-  if(is.nan(rc)) rc <- 0
+  # if(is.nan(rc)) rc <- 0
   return(rc)
 }
 
 ## F1
 #' @keywords internal
-F1 <-  function(Prec,Rec) { (2*Prec*Rec)/(Prec+Rec) }
+# F1 <-  function(Prec,Rec) { (2*Prec*Rec)/(Prec+Rec) }
+
+## F1
+#' @keywords internal
+F1 <-  function(ct) {
+  REC <- Rec(ct)
+  PREC <- Prec(ct)
+  (2*PREC*REC)/(PREC+REC)
+}
 ######
 

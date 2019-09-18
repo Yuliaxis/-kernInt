@@ -96,7 +96,7 @@ Three different colors to represent acid pH, "intermediate" pH and basic pH:
 
 ### Outlier detection
 
-`outliers(data=soilDataRaw,kernel="cRBF",nu=0.9)`
+`outliers(data=soilDataRaw,kernel="cRBF",nu=0.2)`
 
 ### SVM regression 
 
@@ -113,4 +113,37 @@ We can perform k-Cross Validation to train the hyperparameters (Cost):
 
 We want to predict if a certain individual has IBD or not.
 
-`classify(data=speMGX[,7:ncol(speMGX)],y=speMGX[,1],kernel="cRBF",C=1,classimb="data", type="ubOver")`
+`diag <- as.numeric(speMGX[,1])`
+`diag[diag == 3] <- 1`
+`classify(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",C=c(0.1,1,10), k=10)`
+
+`kernInt` supports several methods to deal with imbalanced data:
+
+-Class weighting: 
+
+`classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",classimb="weights",C=c(0.001,0.01),k=10)`
+
+-Undersampling:
+
+`classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",classimb="data",type="ubUnder",C=c(0.001,0.01),k=10`
+
+-Oversampling: 
+
+`classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",classimb="data",type="ubOver",C=c(0.001,0.01),k=10`
+
+-SMOTE: 
+
+`classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",classimb="data",type="ubSMOTE",C=c(0.001,0.01),k=10`
+
+-One-class SVM:
+
+`outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",p=0.8,k=10)`
+
+-Probabilistic SVM:
+
+`classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="wqJac",C=c(0.1,1),CUT=c(0.3,0.4,0.5),k=10,prob = TRUE)`
+
+-Unbalanced SVM:
+
+(falta)
+
