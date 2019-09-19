@@ -161,7 +161,7 @@ return(best.hyp)
 #' @keywords internal
 #' @importFrom kernlab ksvm cross
 
-kCV.reg <- function(GAMMA, EPS, COST, K, Yresp, k, R) {
+kCV.reg <-function(EPS, COST, GAMMA, K, Yresp, k, R) {
 
   # on Y és el vector resposta, i K.train la submatriu amb els individus de training
   min.error <- Inf
@@ -170,31 +170,31 @@ kCV.reg <- function(GAMMA, EPS, COST, K, Yresp, k, R) {
       Kmatrix <- K
     } else { Kmatrix <- exp(g*K)/exp(g) #Standardized Kernel Matrix. Otherwise exp(g*K)
     }
-  for (c in COST){
+    Y <- Yresp
     for (e in EPS) {
-      Kmatrix <- K
-      Y <- Yresp
-      outer.error <- vector(mode="numeric",length=R)
-      for (o in 1:R) {
-        unordered <- sample.int(nrow(Kmatrix))
-        Kmatrix <- Kmatrix[unordered,unordered]
-        Y <- Y[unordered]
-        K.model <- ksvm(Kmatrix, Y, type="eps-svr",kernel="matrix",C=c,cross=k) # Rular el mètode
-        outer.error[o] <- cross(K.model) # La mitjana dels errors és l'error de CV
-      }
-      v.error <- mean(outer.error)
-      print(v.error)
-      if (min.error > v.error) {   # < o <= ???
-        min.error <- v.error
-        best.cost <- c
+      for (c in COST){
+        outer.error <- vector(mode="numeric",length=R)
+        for (o in 1:R) {
+          unordered <- sample.int(nrow(Kmatrix))
+          Kmatrix <- Kmatrix[unordered,unordered]
+          Y <- Y[unordered]
+          K.model <- ksvm(Kmatrix,Y,type="eps-svr",kernel="matrix",C=c,epsilon=e, cross=k) # Rular el mètode
+          outer.error[o] <- cross(K.model) # La mitjana dels errors és l'error de CV
+        }
+        v.error <- mean(outer.error)
+        # print(v.error)
+        if (min.error > v.error) {   # < o <= ???
+          min.error <- v.error
+          best.cost <- c
+          best.e <- e
+          best.g <- g
         }
       }
     }
   }
-  best.hyp <- data.frame(cost=best.cost,error= min.error)
+  best.hyp <- data.frame(cost=best.cost,epsilon=best.e,gamma=best.g,error= min.error)
   return(best.hyp)
 }
-
 ##  NMSE (regression)
 #' @keywords internal
 error.norm <- function(target,prediction) {

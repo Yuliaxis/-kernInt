@@ -42,15 +42,22 @@ regress <- function(data, y, kernel, p=0.8, C=1, G=0, E=0.1, k) {
   Jmatrix <- kernelSelect(kernel,data,y)
 
   trMatrix <- Jmatrix[learn.indexes,learn.indexes]
+  teMatrix <- Jmatrix[test.indexes,learn.indexes]
 
   # 4. Do R x k-Cross Validation
   if(hasArg(k)) {
     if(k<2) stop("k must be equal to or higher than 2")
     bh <- kCV.reg(GAMMA = G, EPS = E, COST = C, K=trMatrix, Yresp=y[learn.indexes], k=k, R=k)
     cost <- bh$cost
+    eps <- bh$epsilon
+    G <- bh$gamma
   } else {
-    if(length(C)>1) paste("C > 1 - Only the first element will be used")
+    if(length(C)>1)  paste("C > 1 - Only the first element will be used")
+    if(length(E)>1) paste("E > 1 - Only the first element will be used")
+    if(length(G)>1) paste("G > 1 - Only the first element will be used")
     cost <- C[1]
+    eps <- E[1]
+    G <- G[1]
   }
 
   if(G != 0)  {
@@ -58,10 +65,9 @@ regress <- function(data, y, kernel, p=0.8, C=1, G=0, E=0.1, k) {
     teMatrix <- exp(G * teMatrix)/exp(G)
   }
 
-  model <- ksvm(trMatrix, y[learn.indexes],type="eps-svr", kernel="matrix", C=cost )
+  model <- ksvm(trMatrix, y[learn.indexes],type="eps-svr", kernel="matrix", C=cost, epsilon = eps)
 
   # 5. Prediction
-  teMatrix <- Jmatrix[test.indexes,learn.indexes]
   teMatrix <- teMatrix[,SVindex(model),drop=FALSE]
   teMatrix <- as.kernelMatrix(teMatrix)
   pred <- kernlab::predict(model,teMatrix)

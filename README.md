@@ -127,15 +127,15 @@ We want to predict if a certain individual has IBD or not.
 
 -Undersampling:
 
-`classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",classimb="data",type="ubUnder",C=c(0.001,0.01),k=10`
+`classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",classimb="data",type="ubUnder",C=c(0.001,0.01),k=10)`
 
 -Oversampling: 
 
-`classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",classimb="data",type="ubOver",C=c(0.001,0.01),k=10`
+`classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",classimb="data",type="ubOver",C=c(0.001,0.01),k=10)`
 
 -SMOTE: 
 
-`classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",classimb="data",type="ubSMOTE",C=c(0.001,0.01),k=10`
+`classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",classimb="data",type="ubSMOTE",C=c(0.001,0.01),k=10)`
 
 -One-class SVM:
 
