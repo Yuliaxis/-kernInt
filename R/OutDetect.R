@@ -1,49 +1,43 @@
 # OUTLIER / NOVELTY DETECTION
 
-#' SVM outlier detection
+#' SVM outlier detection / one class SVM
 #'
+#' outliers() has two principal usages: unsupervised detection of outliers in data, o supervised one-class SVC.
 #'
 #' @param data Input data
-#' @param y Reponse variable
-#' @param kernel "qJac" for quantitative Jaccard and "wqJacc" for quant Jaccard with weights
+#' @param y Reponse variable. If a value is provided, outliers() functions as an one-class SVM.
+#' @param kernel "qJac" for quantitative Jaccard and "wqJacc" for quant Jaccard with weights.
+#' "matrix" if a pre-calculated kernel matrix is given as input.
 #' @param nu Hyperparameter nu
-#' @param G Hyperparameter gamma
-#' @param p If a value is provided, outliers() functions as an one-class SVM. p is the proportion of total data instances in the training set
+#' @param p If a value for y is provided, p is the proportion of total data instances in the training set
 #' @param k The k for the k-Cross Validation. Minimum k = 2.
-#' @return The indexes of the outliers (outlier detection) or, if a value is provided for p, the confusion matrix (one-class SVM)
+#' @param G Hyperparameter gamma
+#' @return The indexes of the outliers (outlier detection) or, if a value is provided for y, the confusion matrix (one-class SVM)
 #' @examples
+#' # Outlier detection
 #' outliers(data=soilDataRaw,kernel="cRBF",nu=0.3)
-#'
+#' ## One-class SVM:
+#' ## Preparing the y
 #' diag <- as.numeric(speMGX[,1])
 #' diag[diag == 3] <- 1  # De 3 a 2 classes: No Malalt /  malalt
 #' diag[diag == 2] <- 0
 #' diag <- as.numeric(!diag) # No malalt classe 1, malalt classe 0
-#' outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",nu=0.2,p=0.8,k=10)
-#' outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",nu=c(0.1,0.2,0.3),G=c(0.01,0.1,1,5,10),p=0.8,k=10)
+#' ## One-class SVM changing the percentage of data for training (70%) and the hyperparameter nu:
+#' outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",nu=0.2,p=0.7)
+#' ## One-class SVM with 10-Cross-Validation:
+#' outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",nu=c(0.45,0.5),G=c(0.1,1),k=10)
 #' @importFrom kernlab ksvm predict
 #' @export
 
 
-outliers <- function(data,y,kernel,nu,p,k,G=0) {
 
-  y <- as.factor(y)
+outliers <- function(data,y,kernel,nu,p=0.8,k,G=0) {
 
-  if(kernel == "qJac") {
-    Jmatrix <- qJacc(data)
-  } else if(kernel == "wqJac") {
-    Jmatrix <- wqJacc(data,y=y)
-    cat("quantJaccard kernel + weights \n")
-  }  else if(kernel == "cRBF") {
-    Jmatrix <- aitch.dist(data)
-    cat("clr + RBF \n")
-  }   else {
-    cat("standard RBF \n")
+  if(hasArg(y)) y <- as.factor(y)
 
-    # Jmatrix <-  kernelMatrix(rbfdot(sigma = g),data)
+  Jmatrix <- kernelSelect(kernel,data,y)
 
-  }
-
-  if(hasArg(p)){
+  if(hasArg(y)){
 
     N <- nrow(data)
     all.indexes <- 1:N
@@ -64,8 +58,9 @@ outliers <- function(data,y,kernel,nu,p,k,G=0) {
       g <- bh$g
       print(c(nu,g))
     } else {
-      if(length(nu)>1) paste("Hyperparameters length > 1 but not k provided - Only the first element will be used")
+      if(length(nu)>1) paste("Nu length > 1 but not k provided - Only the first element will be used")
       nu <- nu[1]
+      if(length(G)>1) paste("Gamma length > 1 but not k provided - Only the first element will be used")
       g <- G[1]
     }
 

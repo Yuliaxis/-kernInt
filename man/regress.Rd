@@ -11,7 +11,8 @@ regress(data, y, kernel, p = 0.8, C = 1, G = 0, E = 0.1, k)
 
 \item{y}{Reponse variable (continuous)}
 
-\item{kernel}{"cRBF" for clrRBF, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights}
+\item{kernel}{"cRBF" for clrRBF, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights
+"matrix" if a pre-calculated kernel matrix is given as input.}
 
 \item{p}{Proportion of total data instances in the training set}
 
@@ -27,8 +28,15 @@ regress(data, y, kernel, p = 0.8, C = 1, G = 0, E = 0.1, k)
 NMSE (normalized mean squared error)
 }
 \description{
-SVM regression
+regress() automatically trains a Support Vector Regrssion model, tests it and returns the Normalized Mean Squared Error.
 }
 \examples{
-regress(data=soilDataRaw[-89,],soilMetaData$ph[-89],kernel="cRBF",C=c(1,10,50),k=10)
+# Data normalization
+soilData <- CSSnorm(data=t(soilDataRaw[-89,]))
+# Simple regression without tuning the hyperparameters
+regress(data=soilData,soilMetaData$ph[-89],kernel="qJac")
+# The percentage of data for training can be changed (default: 0.8 Training / 0.2 Test):
+regress(data=soilData,soilMetaData$ph[-89],kernel="qJac",p=0.6)
+# Regression with 10-Cross-Validation to choose the best Cost and Epsilon:
+regress(data=soilData, y=soilMetaData$ph[-89], kernel="qJac", C=c(0.1,1,10), E = c(0.01,0.1), k=10)
 }

@@ -114,7 +114,9 @@ We can perform k-Cross Validation to train the hyperparameters (Cost):
 We want to predict if a certain individual has IBD or not.
 
 `diag <- as.numeric(speMGX[,1])`
+
 `diag[diag == 3] <- 1`
+
 `classify(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",C=c(0.1,1,10), k=10)`
 
 `kernInt` supports several methods to deal with imbalanced data:
@@ -139,7 +141,7 @@ We want to predict if a certain individual has IBD or not.
 
 `outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",p=0.8,k=10)`
 
--Probabilistic SVM:
+-Probabilistic SVM with a cutoff different to 0.5:
 
 `classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="wqJac",C=c(0.1,1),CUT=c(0.3,0.4,0.5),k=10,prob = TRUE)`
 

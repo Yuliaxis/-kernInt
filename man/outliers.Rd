@@ -2,36 +2,43 @@
 % Please edit documentation in R/OutDetect.R
 \name{outliers}
 \alias{outliers}
-\title{SVM outlier detection}
+\title{SVM outlier detection / one class SVM}
 \usage{
-outliers(data, y, kernel, nu, p, k, G = 0)
+outliers(data, y, kernel, nu, p = 0.8, k, G = 0)
 }
 \arguments{
 \item{data}{Input data}
 
-\item{y}{Reponse variable}
+\item{y}{Reponse variable. If a value is provided, outliers() functions as an one-class SVM.}
 
-\item{kernel}{"qJac" for quantitative Jaccard and "wqJacc" for quant Jaccard with weights}
+\item{kernel}{"qJac" for quantitative Jaccard and "wqJacc" for quant Jaccard with weights.
+"matrix" if a pre-calculated kernel matrix is given as input.}
 
 \item{nu}{Hyperparameter nu}
 
-\item{p}{If a value is provided, outliers() functions as an one-class SVM. p is the proportion of total data instances in the training set}
+\item{p}{If a value for y is provided, p is the proportion of total data instances in the training set}
 
 \item{k}{The k for the k-Cross Validation. Minimum k = 2.}
 
 \item{G}{Hyperparameter gamma}
 }
 \value{
-The indexes of the outliers (outlier detection) or, if a value is provided for p, the confusion matrix (one-class SVM)
+The indexes of the outliers (outlier detection) or, if a value is provided for y, the confusion matrix (one-class SVM)
 }
 \description{
-SVM outlier detection
+outliers() has two principal usages: unsupervised detection of outliers in data, o supervised one-class SVC.
 }
 \examples{
+# Outlier detection
 outliers(data=soilDataRaw,kernel="cRBF",nu=0.3)
+## One-class SVM:
+## Preparing the y
 diag <- as.numeric(speMGX[,1])
 diag[diag == 3] <- 1  # De 3 a 2 classes: No Malalt /  malalt
 diag[diag == 2] <- 0
 diag <- as.numeric(!diag) # No malalt classe 1, malalt classe 0
-outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="cRBF",nu=0.2,p=0.8,k=10)
+## One-class SVM changing the percentage of data for training (70\%) and the hyperparameter nu:
+outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",nu=0.2,p=0.7)
+## One-class SVM with 10-Cross-Validation:
+outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",nu=c(0.45,0.5),G=c(0.1,1),k=10)
 }

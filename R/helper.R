@@ -19,15 +19,41 @@ trainIndx <- function(n, ptrain = 0.8) {
   return(sort(sample(unord,round(ptrain*n))))
 }
 
+#Kernel selection
+#' @keywords internal
+kernelSelect <- function(kernel,data,y) {
+  if(kernel == "qJac") {
+    cat("quantJaccard kernel\n")
+    return(qJacc(data))
+  } else if(kernel == "wqJac") {
+    cat("quantJaccard kernel + weights \n")
+    return(wqJacc(data,y=y))
+  }  else if(kernel == "cRBF") {
+    cat("clr + RBF \n")
+    return(clrRBF(data)) ## s'ha d'arreglar això, perquè ara mateix la gamma no es pot tocar.
+  } else if(kernel == "matrix") {
+    cat("Pre-computed kernel matrix given \n")
+    return(data)
+  }   else {
+    cat("standard RBF \n")
+
+    # Jmatrix <-  kernelMatrix(rbfdot(sigma = G),data)
+    return(qJacc(data)) ##temporalment
+
+  }
+}
+
+
 
 ## K-fold cross- validation
 #' @keywords internal
 #' @importFrom kernlab ksvm cross
 
-kCV <- function(GAMMA, CUT, COST, K, Yresp, k, R,prob, classimb=FALSE) {
+kCV <- function(GAMMA, CUT, COST, K, Yresp, k, R, prob, classimb=FALSE) {
 
   # on Y és el vector resposta, i K.train la submatriu amb els individus de training
   min.error <- Inf
+  cut <- 0.5
   for (g in GAMMA){
     if (g == 0) {
       Kmatrix <- K
@@ -45,7 +71,7 @@ kCV <- function(GAMMA, CUT, COST, K, Yresp, k, R,prob, classimb=FALSE) {
             if(classimb)  {
               K.model <- ksvm(Kmatrix, Y, type="C-svc",kernel="matrix",C=c,cross=k,
                                          class.weights=c("1"=as.numeric(summary(Yresp)[2]),"2"=as.numeric(summary(Yresp)[2]))) # Rular el mètode
-            } else if (prob) {
+            } else if (prob & hasArg(CUT)) {
               N <- trunc(nrow(Kmatrix)/k,digits=0)
               PRED <- matrix(NA,ncol=1,nrow=nrow(Kmatrix))
               # rownames(PRED) <- as.character(Y)
@@ -181,37 +207,3 @@ error.norm <- function(target,prediction) {
 ## Harmonic mean, to compute the F1 accuracy:
 #' @keywords internal
 harm <- function (a,b) { 2/(1/a+1/b) }
-
-## Accuracy
-#' @keywords internal
-Acc <- function(ct) sum(diag(ct))/sum(ct)
-
-## Precision
-#' @keywords internal
-Prec <- function(ct) {
-  pr <- ct[2,2]/sum(ct[,2])
-  # if(is.nan(pr)) pr <- 0
-  return(pr)
-}
-
-## Recall
-#' @keywords internal
-Rec <-  function(ct) {
-  rc <- ct[2,2]/sum(ct[2,])
-  # if(is.nan(rc)) rc <- 0
-  return(rc)
-}
-
-## F1
-#' @keywords internal
-# F1 <-  function(Prec,Rec) { (2*Prec*Rec)/(Prec+Rec) }
-
-## F1
-#' @keywords internal
-F1 <-  function(ct) {
-  REC <- Rec(ct)
-  PREC <- Prec(ct)
-  (2*PREC*REC)/(PREC+REC)
-}
-######
-

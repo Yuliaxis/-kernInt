@@ -4,39 +4,64 @@
 \alias{classify}
 \title{SVM classifier}
 \usage{
-classify(data, y, kernel, p = 0.8, C = 1, G = 0, k, prob = FALSE,
-  classimb = "no", type = "ubOver")
+classify(data, y, kernel, prob = FALSE, classimb = "no",
+  type = "ubOver", p = 0.8, k, C = 1, G = 0, CUT)
 }
 \arguments{
 \item{data}{Input data}
 
-\item{y}{Reponse variable (categoric)}
+\item{y}{Reponse variable (binary)}
 
-\item{kernel}{"cRBF" for clrRBF, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights}
+\item{kernel}{"cRBF" for clrRBF, "qJac" for quantitative Jaccard,  "wqJacc" for quantitative Jaccard with weights.
+"matrix" if a pre-calculated kernel matrix is given as input.}
 
-\item{p}{Proportion of total data instances in the training set}
-
-\item{C}{A vector with the possible costs to evaluate via k-Cross-Val. If no argument is provided cross-validation is not performed.}
-
-\item{G}{Gamma hyperparameter}
-
-\item{k}{The k for the k-Cross Validation. Minimum k = 2.}
-
-\item{prob}{if TRUE builds a model for calculating class probabilities}
+\item{prob}{if TRUE class probabilities (soft-classifier) are computed instead of a True-or-false assignation (hard-classifier)}
 
 \item{classimb}{"weights" to introduce class weights in the SVM algorithm and "data" to oversampling. If other arguments are provided nothing is done.}
 
-\item{type}{Procedure to data oversampling ("ubOver","ubUnder" or "ubSMOTE")}
+\item{type}{If classimb = "data", the procedure to data oversampling or undersampling ("ubOver","ubUnder" or "ubSMOTE")}
+
+\item{p}{Proportion of total data instances in the training set}
+
+\item{k}{The k for the k-Cross Validation. Minimum k = 2. If no argument is provided cross-validation is not performed.}
+
+\item{C}{The cost. A vector with the possible costs (SVM hyperparameter) to evaluate via k-Cross-Val can be entered too.}
+
+\item{G}{Gamma hyperparameter. A vector with the possible gammas to evaluate via k-Cross-Val can be entered too.}
+
+\item{CUT}{Cut-off if prob = TRUE. If CUT is a vector, the best cut-off can be obtained via cross-validation.}
 }
 \value{
-Confusion matrix
+Confusion matrix or, if prob = TRUE and not cutoff is set, a data.frame with the class probability and the actual class.
 }
 \description{
-SVM classifier
+classify() automatically trains a Support Vector Classification model, tests it and returns the confusion matrix.
+}
+\details{
+Cross-validation is available to choose the best hyperparameters (e.g. Cost) during the training step.
+
+The classification can be hard (predicting the class) or soft (predicting the probability of belonging to a given class)
+
+Another feature is the possibility to deal with imbalanced data in the target variable with several techniques:
+\describe{
+  \item{Data Resampling}{Oversampling techniques (oversample the minority class, generating synthetic data with SMOTE)
+  or undersampling the majority class.}
+  \item{Class weighting}{Giving more weight to the minority class}
+}
+To use one-class SVM to deal with imbalanced data, see: outliers()
+
+Currently, the classification can be only performed if the target variable is binary (two classes).
 }
 \examples{
+#Preparing the target variable:
 diag <- as.numeric(speMGX[,1])
-diag[diag == 3] <- 1  # De 3 a 2 classes: No Malalt /  malalt
+diag[diag == 3] <- 1  # 3 classes to 2: Disease (1) /  no Disease (2)
+# Classification with 10-Cross-Validation
 classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",C=c(0.1,1),k=10)
-classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",C=1,classimb="data", type="ubOver")
+# Probabilistic Classification with no cross-validation:
+classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="wqJac",prob = TRUE)
+# Classification (with 10-CV) accounting for the imbalanced data: an example of data resampling
+classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",classimb="data",type="ubUnder",C=c(0.001,0.01),k=10)
+# Classification (with 10-CV) accounting for the imbalanced data: class weighting:
+classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",classimb="weights",C=c(0.001,0.01),k=10)
 }
