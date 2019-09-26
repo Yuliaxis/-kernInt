@@ -71,7 +71,6 @@ regress <- function(data, y, kernel, p=0.8, C=1, G=0, E=0.1, k) {
   teMatrix <- teMatrix[,SVindex(model),drop=FALSE]
   teMatrix <- as.kernelMatrix(teMatrix)
   pred <- kernlab::predict(model,teMatrix)
-  # print(pred)
 
   return( error.norm(y[test.indexes],pred))
 }

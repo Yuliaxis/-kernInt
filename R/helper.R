@@ -31,6 +31,9 @@ kernelSelect <- function(kernel,data,y) {
   }  else if(kernel == "cRBF") {
     cat("clr + RBF \n")
     return(clrRBF(data)) ## s'ha d'arreglar això, perquè ara mateix la gamma no es pot tocar.
+  } else if(kernel == "time") {
+    cat("Time matrix \n")
+    return(TimeK(data))
   } else if(kernel == "matrix") {
     cat("Pre-computed kernel matrix given \n")
     return(data)

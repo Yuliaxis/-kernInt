@@ -18,3 +18,14 @@
 #' @source \url{https://ibdmdb.org/tunnel/public/HMP2/WGS/1818/products}
 "genMGX"
 
+#' Metagenome sampling times of 131 individuals (in weeks)
+#'
+#' @format A data frame with 131 rows (patients) and 55 columns (week number)
+#' @source \url{https://ibdmdb.org/tunnel/public/HMP2/WGS/1818/products}
+"visitTable"
+
+#' Fecal Calprotectin levels
+#'
+#' @format A data frame with 131 rows (patients) and 52 columns (week number)
+#' @source \url{https://ibdmdb.org/tunnel/products/HMP2/Metadata/hmp2_metadata.csv}
+"FcalWeek"

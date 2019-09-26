@@ -62,6 +62,6 @@ classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",C=c(0.1,1),k=10)
 classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="wqJac",prob = TRUE)
 # Classification (with 10-CV) accounting for the imbalanced data: an example of data resampling
 classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",classimb="data",type="ubUnder",C=c(0.001,0.01),k=10)
-# Classification (with 10-CV) accounting for the imbalanced data: class weighting:
+# Classification (with 10-CV) accounting for the imbalanced data: class weighting
 classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",classimb="weights",C=c(0.001,0.01),k=10)
 }

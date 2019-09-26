@@ -11,7 +11,7 @@ regress(data, y, kernel, p = 0.8, C = 1, G = 0, E = 0.1, k)
 
 \item{y}{Reponse variable (continuous)}
 
-\item{kernel}{"cRBF" for clrRBF, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights
+\item{kernel}{"cRBF" for clrRBF, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights.
 "matrix" if a pre-calculated kernel matrix is given as input.}
 
 \item{p}{Proportion of total data instances in the training set}
