@@ -23,11 +23,11 @@ In R console:
 
 ### Main features
 
-- Implementation of quantitative Jaccard (Ruzicka similarity) with or without weights
-- Implementation of Aitchison-RBF kernel
+- Implementation of quantitative Jaccard (Ruzicka similarity) with or without weights.
+- Implementation of Aitchison-RBF kernel.
 - Outliers / Novelty detection via SVMs.
-- Integration of kernel matrices (the only approach available right now is doing the mean)
-- Training/test splitting, k-Cross Validation and SVM classification and regression
+- Integration of kernel matrices via Multiple Kernel Learning.
+- Training/test splitting, k-Cross Validation and SVM classification and regression.
 
 ### Example data
 
@@ -109,6 +109,10 @@ We can perform k-Cross Validation to train the hyperparameters (Cost):
 
 `regress(data=soilDataRaw[-89,], y=soilMetaData$ph[-89], kernel="cRBF", C=c(0.1,1,10), k=10, p=0.8)`
 
+If the input data has repeated rownames, regress() will consider that the row names that share id are repeated measures 
+coming from the same individual. The function will ensure that all repeated measures are used either to train
+or to test the model, but not for both, thus preserving the independance between the training and tets sets.
+
 ### SVM classification
 
 We want to predict if a certain individual has IBD or not.
@@ -149,3 +153,22 @@ We want to predict if a certain individual has IBD or not.
 
 (falta)
 
+Both classify() and outliers() have the same treatment regarding repeated row names in the input data than regress().
+
+## Data fusion
+
+MKL (Multiple Kernel Learning) is available through `KInt()` and `fuseData()`. The two return a fused kernel matrix, but the former needs an array as input while in the latter a list with the different data sources is needed.
+
+`d <- list()`
+
+`d[[1]] <- matrix(abs(rnorm(20)),nrow=4,ncol=5)`
+
+`d[[2]] <- matrix(abs(rnorm(20)),nrow=4,ncol=5)`
+
+We can use different kernel functions for each type of data; for example, Ruzicka for the first data type and Aitchison-RBF for the second:
+
+`fuseData(DATA=d,kernel=c("qJac","cRBF"))`
+
+The former command consider the two sources equally important. If not, we can state the weights:
+
+`fuseData(DATA=d,kernel=c("qJac","cRBF"),coeff=c(0.9,0.1))`

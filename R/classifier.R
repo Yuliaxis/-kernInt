@@ -16,6 +16,10 @@
 #' }
 #' To use one-class SVM to deal with imbalanced data, see: outliers()
 #'
+#' If the input data has repeated rownames, classify() will consider that the row names that share id are repeated
+#' measures from the same individual. The function will ensure that all repeated measures are used either to train
+#' or to test the model, but not for both, thus preserving the independance between the training and tets sets.
+#'
 #' Currently, the classification can be only performed if the target variable is binary (two classes).
 #'
 #' @param data Input data
@@ -54,23 +58,60 @@ classify <- function(data, y, kernel,  prob=FALSE, classimb="no", type="ubOver",
 
   # 1. Classes
   diagn <- as.factor(y)
+  levels(diagn) <- c("1","2")
 
   # 1. TR/TE
-  N <- nrow(data)
+
+  ids <- as.factor(rownames(data))
+  N <-  nlevels(ids)
+  # N <- nrow(data)
   all.indexes <- 1:N
 
   learn.indexes <- trainIndx(n=N,ptrain=p)
   test.indexes <- all.indexes[-learn.indexes]
 
-  nlearn <- length(learn.indexes)
-  ntest <- N - nlearn
+  ##Mostres vinculades
+  if(length(ids) > nlevels(ids)) {
+    trNames <- levels(ids)[learn.indexes]
+    teNames <-  levels(ids)[test.indexes]
+    learn.indexes <- which(ids %in% trNames)
+    test.indexes <- which(ids %in% teNames)
+    #Unique test - si es vol llevar, comentar aquestes 4 línies.
+    names(test.indexes) <- ids[which(ids %in% teNames)]
+    test.indexes <- sample(test.indexes)[teNames]
+    names(test.indexes) <- NULL
+    test.indexes <- sort(test.indexes)
+  }
 
   if(classimb=="data")  {
-    dades <- data[c(learn.indexes,test.indexes),]
+
+    nlearn <- length(learn.indexes)
+    ntest <- length(test.indexes)
+    N <- nlearn + ntest
+
     diagn <- diagn[c(learn.indexes,test.indexes)]
-    if(type == "ubOver")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2,  k=0)
-    if(type == "ubUnder")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
-    if(type == "ubSMOTE")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
+    if(kernel == "matrix") {
+      if(type == "ubSMOTE") stop("Kernel matrix as input is not compatible with SMOTE. Original dataset is required.")
+
+      dades <- data[c(learn.indexes,test.indexes),c(learn.indexes,test.indexes)]
+      rownames(dades) <- 1:N
+
+      if(type == "ubOver")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2, k=0)
+      if(type == "ubUnder")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
+
+      ii <- c(as.numeric(rownames(SobrDadesTr$X)),(nlearn+1):N)
+      data <- data[ii,ii]
+      diagn <- diagn[ii]
+      N <- nrow(data)
+      nlearn <- length(SobrDadesTr$Y)
+      learn.indexes <- 1:nlearn
+      test.indexes <- (nlearn+1):N
+    } else {
+    dades <- data[c(learn.indexes,test.indexes),]
+
+    if(type == "ubUnder") SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
+    if(type == "ubOver") SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2,  k=0)
+    if(type == "ubSMOTE") SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
     data <- rbind(SobrDadesTr$X,dades[(nlearn+1):N,])
     nlearn <- length(SobrDadesTr$Y)
     N <- nrow(data)
@@ -78,6 +119,8 @@ classify <- function(data, y, kernel,  prob=FALSE, classimb="no", type="ubOver",
     diagn <- as.factor(diagn)
     learn.indexes <- 1:nlearn
     test.indexes <- (nlearn+1):N
+    }
+
   }
 
   if(classimb == "weights")  {
@@ -133,7 +176,6 @@ classify <- function(data, y, kernel,  prob=FALSE, classimb="no", type="ubOver",
   teMatrix <- teMatrix[,SVindex(model),drop=FALSE]
   teMatrix <- as.kernelMatrix(teMatrix)
 
-  levels(diagn) <- c("1","2")
   if(prob)  {
     pred <- predict(model,teMatrix,type = "probabilities")
     if(!hasArg(CUT)) {

@@ -4,6 +4,10 @@
 #'
 #' outliers() has two principal usages: unsupervised detection of outliers in data, o supervised one-class SVC.
 #'
+#' If outliers() is used in a supervised way and the input data has repeated rownames, classify() will consider that the row names that share id are repeated
+#' measures from the same individual. The function will ensure that all repeated measures are used either to train
+#' or to test the model, but not for both, thus preserving the independence between the training and tets sets.
+#'
 #' @param data Input data
 #' @param y Reponse variable. If a value is provided, outliers() functions as an one-class SVM.
 #' @param kernel "qJac" for quantitative Jaccard and "wqJacc" for quant Jaccard with weights.
@@ -33,17 +37,29 @@
 
 outliers <- function(data,y,kernel,nu,p=0.8,k,G=0) {
 
-  if(hasArg(y)) y <- as.factor(y)
-
+  if(hasArg(y)) {
+    y <- as.factor(y)
+    levels(y) <- c("0","1")
+  }
   Jmatrix <- kernelSelect(kernel,data,y)
 
   if(hasArg(y)){
 
-    N <- nrow(data)
+    ids <- as.factor(rownames(data))
+    N <-  nlevels(ids)
+    # N <- nrow(data)
     all.indexes <- 1:N
 
     learn.indexes <- trainIndx(n=N,ptrain=p)
     test.indexes <- all.indexes[-learn.indexes]
+
+    ##Mostres vinculades
+    if(length(ids) > nlevels(ids)) {
+      trNames <- levels(ids)[learn.indexes]
+      teNames <-  levels(ids)[test.indexes]
+      learn.indexes <- which(ids %in% trNames)
+      test.indexes <- which(ids %in% teNames)
+    }
 
     nlearn <- length(learn.indexes)
     ntest <- N - nlearn
@@ -76,8 +92,6 @@ outliers <- function(data,y,kernel,nu,p=0.8,k,G=0) {
     pred <- kernlab::predict(model,teMatrix)
 
     pred <- as.factor(as.numeric(pred))
-
-    levels(y) <- c("0","1")
     levels(pred) <- c("0","1")
 
     ct <- table(Truth=y[test.indexes], Pred=pred)

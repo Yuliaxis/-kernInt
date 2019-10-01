@@ -5,6 +5,9 @@
 #'regress() automatically trains a Support Vector Regrssion model, tests it and returns the Normalized Mean Squared Error.
 #'
 # Cross-validation is available to choose the best hyperparameters (e.g. Cost, Epsilon) during the training step.
+#' If the input data has repeated rownames, classify() will consider that the row names that share id are repeated
+#' measures from the same individual. The function will ensure that all repeated measures are used either to train
+#' or to test the model, but not for both, thus preserving the independence between the training and tets sets.
 #'
 #' @param data Input data
 #' @param y Reponse variable (continuous)
@@ -31,10 +34,22 @@
 regress <- function(data, y, kernel, p=0.8, C=1, G=0, E=0.1, k) {
 
   # 1. TR/TE
-  N <- nrow(data)
+  ids <- as.factor(rownames(data))
+  N <-  nlevels(ids)
+  # N <- nrow(data)
   all.indexes <- 1:N
+
   learn.indexes <- trainIndx(n=N,ptrain=p)
   test.indexes <- all.indexes[-learn.indexes]
+
+  ##Mostres vinculades
+  if(length(ids) > nlevels(ids)) {
+    trNames <- levels(ids)[learn.indexes]
+    teNames <-  levels(ids)[test.indexes]
+    learn.indexes <- which(ids %in% trNames)
+    test.indexes <- which(ids %in% teNames)
+  }
+
   nlearn <- length(learn.indexes)
   ntest <- N - nlearn
 
