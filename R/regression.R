@@ -15,7 +15,7 @@
 #' "matrix" if a pre-calculated kernel matrix is given as input.
 #' @param p Proportion of total data instances in the training set
 #' @param C A vector with the possible costs to evaluate via k-Cross-Val. If no argument is provided cross-validation is not performed.
-#' @param G Gamma hyperparameter
+#' @param H Gamma hyperparameter
 #' @param E Epsilon hyperparameter
 #' @param k The k for the k-Cross Validation. Minimum k = 2.
 #' @return NMSE (normalized mean squared error)
@@ -31,7 +31,7 @@
 #' @importFrom kernlab as.kernelMatrix kernelMatrix predict rbfdot SVindex
 #' @export
 
-regress <- function(data, y, kernel, p=0.8, C=1, G=0, E=0.1, k) {
+regress <- function(data, y, kernel, p=0.8, C=1, H=0, E=0.1, k) {
 
   # 1. TR/TE
   ids <- as.factor(rownames(data))
@@ -62,22 +62,22 @@ regress <- function(data, y, kernel, p=0.8, C=1, G=0, E=0.1, k) {
   # 4. Do R x k-Cross Validation
   if(hasArg(k)) {
     if(k<2) stop("k must be equal to or higher than 2")
-    bh <- kCV.reg(GAMMA = G, EPS = E, COST = C, K=trMatrix, Yresp=y[learn.indexes], k=k, R=k)
+    bh <- kCV.core(H = H, method="svr", kernel=kernel,EPS = E, COST = C, K=trMatrix, Y=y[learn.indexes], k=k, R=k)
     cost <- bh$cost
     eps <- bh$epsilon
-    G <- bh$gamma
+    H <- bh$h
   } else {
     if(length(C)>1)  paste("C > 1 - Only the first element will be used")
     if(length(E)>1) paste("E > 1 - Only the first element will be used")
-    if(length(G)>1) paste("G > 1 - Only the first element will be used")
+    if(length(H)>1) paste("H > 1 - Only the first element will be used")
     cost <- C[1]
     eps <- E[1]
-    G <- G[1]
+    H <- H[1]
   }
 
-  if(G != 0)  {
-    trMatrix <- exp(G * trMatrix)/exp(G)
-    teMatrix <- exp(G * teMatrix)/exp(G)
+  if(H != 0)  {
+    trMatrix <- exp(H * trMatrix)/exp(H)
+    teMatrix <- exp(H * teMatrix)/exp(H)
   }
 
   model <- ksvm(trMatrix, y[learn.indexes],type="eps-svr", kernel="matrix", C=cost, epsilon = eps)

@@ -12,6 +12,22 @@ expand.grid.mod <- function(x, rep) { # x is a vector
   do.call(rbind, lapply(seq_along(x), g))
 }
 
+# Covariance matrix
+#' @keywords internal
+covmat <- function(ind, visits, cov) {
+  totalrows <- visits*ind
+  K <- matrix(0,nrow=totalrows,ncol=totalrows)
+  rownames(K) <- 1:totalrows
+  colnames(K) <- rownames(K)
+  for(i in 1:ind) {
+    index <- ((i-1)*visits+1):(i*visits)
+    K[index,index] <- cov
+  }
+  diag(K) <- 1
+  return(K)
+}
+
+
 #Training indexes
 #' @keywords internal
 trainIndx <- function(n, ptrain = 0.8) {
@@ -21,31 +37,66 @@ trainIndx <- function(n, ptrain = 0.8) {
 
 #Kernel selection
 #' @keywords internal
-kernelSelect <- function(kernel,data,y) {
+kernelSelect <- function(kernel,data,y,h) { #h és un hiperparàmetre
   if(kernel == "qJac") {
     cat("quantJaccard kernel\n")
-    return(qJacc(data))
+    return(qJacc(data,h))
   } else if(kernel == "wqJac") {
     cat("quantJaccard kernel + weights \n")
-    return(wqJacc(data,y=y))
+    return(wqJacc(data,y=y,h))
   }  else if(kernel == "cRBF") {
     cat("clr + RBF \n")
-    return(clrRBF(data)) ## s'ha d'arreglar això, perquè ara mateix la gamma no es pot tocar.
+    return(aitch.dist(data)) ## s'ha d'arreglar això, perquè ara mateix la gamma no es pot tocar.
   } else if(kernel == "time") {
     cat("Time matrix \n")
-    return(TimeK(data))
+    return(TimeK(data,h))
+  }else if(kernel == "cov") {
+    cat("Covariance matrix \n")
+    return(covmat(ind=data[1],visits=data[2],cov=h))
   } else if(kernel == "matrix") {
     cat("Pre-computed kernel matrix given \n")
     return(data)
   }   else {
     cat("standard RBF \n")
-
     # Jmatrix <-  kernelMatrix(rbfdot(sigma = G),data)
     return(qJacc(data)) ##temporalment
 
   }
 }
 
+
+## Hyperparameters depending on kernel selected
+#' @keywords internal
+
+hyperkSelection <- function(K, h, kernel) {
+  if(kernel == "qJac" | kernel == "wqJac") {
+    if (h == 0) {
+      Kmatrix <- K
+    } else { Kmatrix <- exp(h*K)/exp(h) #Standardized Kernel Matrix. Otherwise exp(g*K)
+    }
+  } else if(kernel == "cRBF" | kernel == "time") {
+    Kmatrix <- exp(-h*K)
+  } else if(kernel == "cov") {
+    # Kmatrix <- covmat(?,?,p=h)
+    stop("Kernel not available yet.")
+
+  } else if(kernel == "matrix") {
+    Kmatrix <- K
+  } else {
+    stop("Kernel not available.")
+  }
+  return(Kmatrix)
+}
+
+# Kernel computing for different types of data
+#' @keywords internal
+seqEval <- function(DATA,kernels,y,h) {
+  m <- length(DATA)
+  n <- nrow(DATA[[1]])
+  K <- array(0,dim=c(n,n,m))
+  for(i in 1:m)  K[,,i] <- kernelSelect(data = DATA[[i]],  k = kernels[i],h=h)
+  return(K)
+}
 
 
 ## K-fold cross- validation

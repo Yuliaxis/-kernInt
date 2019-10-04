@@ -4,7 +4,7 @@
 \alias{wqJacc}
 \title{Quantitative Jaccard with weights}
 \usage{
-wqJacc(data, w, y)
+wqJacc(data, w, y, h)
 }
 \arguments{
 \item{data}{A matrix or data.frame containing nonnegative values.}
@@ -15,6 +15,8 @@ decrease in Gini index (see below)}
 
 \item{y}{If a vector of weights is not provided, a vector of responses for computing the RF
 weights should be provided instead.}
+
+\item{h}{An hyperparametr}
 }
 \value{
 The weighted quantitative Jaccard kernel matrix

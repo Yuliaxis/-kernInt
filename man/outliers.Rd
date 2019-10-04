@@ -4,7 +4,7 @@
 \alias{outliers}
 \title{SVM outlier detection / one class SVM}
 \usage{
-outliers(data, y, kernel, nu, p = 0.8, k, G = 0)
+outliers(data, y, kernel, nu, p = 0.8, k, H = 0)
 }
 \arguments{
 \item{data}{Input data}
@@ -20,13 +20,18 @@ outliers(data, y, kernel, nu, p = 0.8, k, G = 0)
 
 \item{k}{The k for the k-Cross Validation. Minimum k = 2.}
 
-\item{G}{Hyperparameter gamma}
+\item{H}{Hyperparameter gamma}
 }
 \value{
 The indexes of the outliers (outlier detection) or, if a value is provided for y, the confusion matrix (one-class SVM)
 }
 \description{
 outliers() has two principal usages: unsupervised detection of outliers in data, o supervised one-class SVC.
+}
+\details{
+If outliers() is used in a supervised way and the input data has repeated rownames, classify() will consider that the row names that share id are repeated
+measures from the same individual. The function will ensure that all repeated measures are used either to train
+or to test the model, but not for both, thus preserving the independence between the training and tets sets.
 }
 \examples{
 # Outlier detection
@@ -40,5 +45,5 @@ diag <- as.numeric(!diag) # No malalt classe 1, malalt classe 0
 ## One-class SVM changing the percentage of data for training (70\%) and the hyperparameter nu:
 outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",nu=0.2,p=0.7)
 ## One-class SVM with 10-Cross-Validation:
-outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",nu=c(0.45,0.5),G=c(0.1,1),k=10)
+outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",nu=c(0.45,0.5),H=c(0.1,1),k=10)
 }

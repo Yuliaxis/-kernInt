@@ -4,7 +4,7 @@
 \alias{regress}
 \title{SVM regression}
 \usage{
-regress(data, y, kernel, p = 0.8, C = 1, G = 0, E = 0.1, k)
+regress(data, y, kernel, p = 0.8, C = 1, H = 0, E = 0.1, k)
 }
 \arguments{
 \item{data}{Input data}
@@ -18,7 +18,7 @@ regress(data, y, kernel, p = 0.8, C = 1, G = 0, E = 0.1, k)
 
 \item{C}{A vector with the possible costs to evaluate via k-Cross-Val. If no argument is provided cross-validation is not performed.}
 
-\item{G}{Gamma hyperparameter}
+\item{H}{Gamma hyperparameter}
 
 \item{E}{Epsilon hyperparameter}
 
@@ -29,6 +29,11 @@ NMSE (normalized mean squared error)
 }
 \description{
 regress() automatically trains a Support Vector Regrssion model, tests it and returns the Normalized Mean Squared Error.
+}
+\details{
+If the input data has repeated rownames, classify() will consider that the row names that share id are repeated
+measures from the same individual. The function will ensure that all repeated measures are used either to train
+or to test the model, but not for both, thus preserving the independence between the training and tets sets.
 }
 \examples{
 # Data normalization

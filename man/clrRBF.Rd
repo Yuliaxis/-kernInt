@@ -4,12 +4,12 @@
 \alias{clrRBF}
 \title{clr transf + RBF kernel}
 \usage{
-clrRBF(data, g = 1e-04)
+clrRBF(data, h)
 }
 \arguments{
 \item{data}{A matrix or data.frame containing only positive values.}
 
-\item{g}{Gamma hyperparameter}
+\item{h}{Kernel hyperparameter (gamma)}
 }
 \value{
 RBF kernel over a clr transformated data

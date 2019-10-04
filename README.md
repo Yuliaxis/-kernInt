@@ -157,7 +157,7 @@ Both classify() and outliers() have the same treatment regarding repeated row na
 
 ## Data fusion
 
-MKL (Multiple Kernel Learning) is available through `KInt()` and `fuseData()`. The two return a fused kernel matrix, but the former needs an array as input while in the latter a list with the different data sources is needed.
+MKL (Multiple Kernel Learning) is available through `KInt()` and `fuseData()`. The two return a fused kernel matrix, but the use kernel matrices as input while in the latter a list with the different data sources is needed.
 
 `d <- list()`
 

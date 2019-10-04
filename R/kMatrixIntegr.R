@@ -35,8 +35,9 @@ KInt <- function(data,coeff) {
 #' Fuse Data
 #'
 #' @param DATA A list of the *m* data to fuse
-#' @param kernel A vector of length *m* with the kernels to use in each data
+#' @param kernels A vector of length *m* with the kernels to use in each data
 #' @param y Only if "wqJac" is chosen: response variable
+#' @param h Kernel hyperparameter (gamma)
 #' @param coeff A vector of length *m* with the weight of each kernel data,
 #' or length(m) - 1 if the last coefficient is 1 - sum(coeff).
 #' If absent,  all data is considered equally important.
@@ -50,11 +51,10 @@ KInt <- function(data,coeff) {
 #' @export
 #'
 
-fuseData <- function(DATA,kernel,y,coeff) {
+fuseData <- function(DATA,coeff,kernels,y,h) {
+  Kmatrix <- seqEval(DATA,kernels,y,h)
   m <- length(DATA)
-  n <- nrow(DATA[[1]])
-  Kmatrix <- array(0,dim=c(n,n,m))
-  for(k in 1:m)  Kmatrix[,,k] <- kernelSelect(data = DATA[[k]],  k = kernel[k],y=y[k])
+
   if(hasArg(coeff)) {
     print("Coeff")
     if(length(coeff) == (m - 1) && coeff < 1) coeff <- c(coeff,1-coeff)
@@ -63,7 +63,3 @@ fuseData <- function(DATA,kernel,y,coeff) {
     return(KInt(Kmatrix))
   }
 }
-
-
-# ALFA*Jacc(metagData) + (1-ALFA) * KTime(visitTable)
-#Aquesta "fusedata" seria s'entrada a classify() via kernel="matrix".

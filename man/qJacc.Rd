@@ -4,10 +4,12 @@
 \alias{qJacc}
 \title{Quantitative Jaccard}
 \usage{
-qJacc(data)
+qJacc(data, h)
 }
 \arguments{
 \item{data}{A matrix or data.frame containing nonnegative values.}
+
+\item{h}{An hyperparametr}
 }
 \value{
 The quantitative Jaccard kernel matrix

@@ -33,12 +33,15 @@ TimeK <- function(data,h) {
   colnames(K) <- visits
   rownames(K) <- colnames(K)
   if(hasArg(h)) {
-    for(i in 1:length(values)) K[index[i,1],index[i,2]] <- exp(-h*values)[i]
+    for(i in 1:length(values)) K[index[i,1],index[i,2]] <- exp(-h*values[i])
   } else {
-      for(i in 1:length(values)) K[index[i,1],index[i,2]] <- (values)[i]
+      for(i in 1:length(values)) K[index[i,1],index[i,2]] <- abs(values[i])
     }
   K <- K + t(K)
-  if(hasArg(h)) diag(K) <- 1
+  if(hasArg(h))  { diag(K) <- 1
+  } else {
+    K[K == 0] <- NA
+    diag(K) <- 0 }
   return(K)
 }
 

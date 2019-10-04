@@ -5,14 +5,14 @@
 \title{SVM classifier}
 \usage{
 classify(data, y, kernel, prob = FALSE, classimb = "no",
-  type = "ubOver", p = 0.8, k, C = 1, G = 0, CUT)
+  type = "ubOver", p = 0.8, k, C = 1, H = 0, CUT)
 }
 \arguments{
 \item{data}{Input data}
 
 \item{y}{Reponse variable (binary)}
 
-\item{kernel}{"cRBF" for clrRBF, "qJac" for quantitative Jaccard,  "wqJacc" for quantitative Jaccard with weights.
+\item{kernel}{"cRBF" for clrRBF, "qJac" for quantitative Jaccard,  "wqJac" for quantitative Jaccard with weights.
 "matrix" if a pre-calculated kernel matrix is given as input.}
 
 \item{prob}{if TRUE class probabilities (soft-classifier) are computed instead of a True-or-false assignation (hard-classifier)}
@@ -27,7 +27,7 @@ classify(data, y, kernel, prob = FALSE, classimb = "no",
 
 \item{C}{The cost. A vector with the possible costs (SVM hyperparameter) to evaluate via k-Cross-Val can be entered too.}
 
-\item{G}{Gamma hyperparameter. A vector with the possible gammas to evaluate via k-Cross-Val can be entered too.}
+\item{H}{Gamma hyperparameter. A vector with the possible gammas to evaluate via k-Cross-Val can be entered too.}
 
 \item{CUT}{Cut-off if prob = TRUE. If CUT is a vector, the best cut-off can be obtained via cross-validation.}
 }
@@ -49,6 +49,10 @@ Another feature is the possibility to deal with imbalanced data in the target va
   \item{Class weighting}{Giving more weight to the minority class}
 }
 To use one-class SVM to deal with imbalanced data, see: outliers()
+
+If the input data has repeated rownames, classify() will consider that the row names that share id are repeated
+measures from the same individual. The function will ensure that all repeated measures are used either to train
+or to test the model, but not for both, thus preserving the independance between the training and tets sets.
 
 Currently, the classification can be only performed if the target variable is binary (two classes).
 }

@@ -15,7 +15,7 @@
 #' @param nu Hyperparameter nu
 #' @param p If a value for y is provided, p is the proportion of total data instances in the training set
 #' @param k The k for the k-Cross Validation. Minimum k = 2.
-#' @param G Hyperparameter gamma
+#' @param H Hyperparameter gamma
 #' @return The indexes of the outliers (outlier detection) or, if a value is provided for y, the confusion matrix (one-class SVM)
 #' @examples
 #' # Outlier detection
@@ -29,13 +29,13 @@
 #' ## One-class SVM changing the percentage of data for training (70%) and the hyperparameter nu:
 #' outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",nu=0.2,p=0.7)
 #' ## One-class SVM with 10-Cross-Validation:
-#' outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",nu=c(0.45,0.5),G=c(0.1,1),k=10)
+#' outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",nu=c(0.45,0.5),H=c(0.1,1),k=10)
 #' @importFrom kernlab ksvm predict
 #' @export
 
 
 
-outliers <- function(data,y,kernel,nu,p=0.8,k,G=0) {
+outliers <- function(data,y,kernel,nu,p=0.8,k,H=0) {
 
   if(hasArg(y)) {
     y <- as.factor(y)
@@ -69,20 +69,20 @@ outliers <- function(data,y,kernel,nu,p=0.8,k,G=0) {
 
     if(hasArg(k)) {
       if(k<2) stop("k must be equal to or higher than 2")
-      bh <- kCV.one(K=trMatrix, Yresp=y[learn.indexes], NU=nu, GAMMA=G, k=k, R=k)
+      bh <- kCV.core(method="one",K=trMatrix,  kernel=kernel,Y=y[learn.indexes], NU=nu, H=H, k=k, R=k)
       nu <- bh$nu
-      g <- bh$g
-      print(c(nu,g))
+      H <- bh$h
+      print(c(nu,H))
     } else {
       if(length(nu)>1) paste("Nu length > 1 but not k provided - Only the first element will be used")
       nu <- nu[1]
-      if(length(G)>1) paste("Gamma length > 1 but not k provided - Only the first element will be used")
-      g <- G[1]
+      if(length(H)>1) paste("Gamma length > 1 but not k provided - Only the first element will be used")
+      H <- H[1]
     }
 
-    if(g != 0)  {
-      trMatrix <- exp(g * trMatrix)/exp(g)
-      teMatrix <- exp(g * teMatrix)/exp(g)
+    if(H != 0)  {
+      trMatrix <- exp(H * trMatrix)/exp(H)
+      teMatrix <- exp(H * teMatrix)/exp(H)
     }
 
     model <- ksvm(trMatrix,nu=nu, type="one-svc", kernel="matrix")

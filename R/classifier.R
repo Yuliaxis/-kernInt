@@ -24,7 +24,7 @@
 #'
 #' @param data Input data
 #' @param y Reponse variable (binary)
-#' @param kernel "cRBF" for clrRBF, "qJac" for quantitative Jaccard,  "wqJacc" for quantitative Jaccard with weights.
+#' @param kernel "cRBF" for clrRBF, "qJac" for quantitative Jaccard,  "wqJac" for quantitative Jaccard with weights.
 #' "matrix" if a pre-calculated kernel matrix is given as input.
 #' @param prob if TRUE class probabilities (soft-classifier) are computed instead of a True-or-false assignation (hard-classifier)
 #' @param classimb "weights" to introduce class weights in the SVM algorithm and "data" to oversampling. If other arguments are provided nothing is done.
@@ -32,7 +32,7 @@
 #' @param p Proportion of total data instances in the training set
 #' @param k The k for the k-Cross Validation. Minimum k = 2. If no argument is provided cross-validation is not performed.
 #' @param C The cost. A vector with the possible costs (SVM hyperparameter) to evaluate via k-Cross-Val can be entered too.
-#' @param G Gamma hyperparameter. A vector with the possible gammas to evaluate via k-Cross-Val can be entered too.
+#' @param H Gamma hyperparameter. A vector with the possible gammas to evaluate via k-Cross-Val can be entered too.
 #' @param CUT Cut-off if prob = TRUE. If CUT is a vector, the best cut-off can be obtained via cross-validation.
 #' @return Confusion matrix or, if prob = TRUE and not cutoff is set, a data.frame with the class probability and the actual class.
 #' @examples
@@ -54,7 +54,7 @@
 
 
 
-classify <- function(data, y, kernel,  prob=FALSE, classimb="no", type="ubOver", p=0.8, k, C=1, G=0, CUT) {
+classify <- function(data, y, kernel,  prob=FALSE, classimb="no", type="ubOver", p=0.8, k, C=1, H=0, CUT) {
 
   # 1. Classes
   diagn <- as.factor(y)
@@ -135,40 +135,39 @@ classify <- function(data, y, kernel,  prob=FALSE, classimb="no", type="ubOver",
   trMatrix <- Jmatrix[learn.indexes,learn.indexes]
   teMatrix <- Jmatrix[test.indexes,learn.indexes]
 
-
   # 4. Do R x k-Cross Validation
   if(hasArg(k)) {
     if(k<2) stop("k must be equal to or higher than 2")
     if(hasArg(CUT)) {
-       bh <- kCV(COST = C, GAMMA = G, CUT=CUT, K=trMatrix, prob=prob, Yresp=diagn[learn.indexes], k=k, R=k,classimb=wei)
+       bh <- kCV.core(method="svc",COST = C, H = H, kernel=kernel,CUT=CUT, K=trMatrix, prob=prob, Y=diagn[learn.indexes], k=k, R=k,classimb=wei)
        cut <- bh$cut
        } else {
-       bh <- kCV(COST = C, GAMMA = G, K=trMatrix, prob=prob, Yresp=diagn[learn.indexes], k=k, R=k,classimb=wei)
+       bh <- kCV.core(method="svc",COST = C, H = H, kernel=kernel, K=trMatrix, prob=prob, Y=diagn[learn.indexes], k=k, R=k,classimb=wei)
       }
     cost <- bh$cost
-    G <- bh$gamma
+    H <- bh$h
 
   } else {
     if(length(C)>1) paste("C > 1 and no k provided - Only the first element will be used")
     cost <- C[1]
-    if(length(G)>1) paste("G > 1 and no k provided- Only the first element will be used")
-    G <- G[1]
+    if(length(H)>1) paste("H > 1 and no k provided- Only the first element will be used")
+    H <- H[1]
     if(hasArg(CUT) && length(CUT)>1) {
       paste("CUT > 1 and no k provided - Only the first element will be used")
       CUT <- CUT[1]
     }
   }
 
-  if(G != 0)  {
-    trMatrix <- exp(G * trMatrix)/exp(G)
-    teMatrix <- exp(G * teMatrix)/exp(G)
+  if(H != 0)  {
+    trMatrix <- exp(H * trMatrix)/exp(H)
+    teMatrix <- exp(H * teMatrix)/exp(H)
   }
 
   if(wei) {
     model <- ksvm(trMatrix, diagn[learn.indexes], kernel="matrix", type="C-svc",
-                  C=cost,GAMMA = G, class.weights=c("1"=as.numeric(summary(diagn[learn.indexes])[2]),"2"=as.numeric(summary(diagn[learn.indexes])[1])))
+                  C=cost, class.weights=c("1"=as.numeric(summary(diagn[learn.indexes])[2]),"2"=as.numeric(summary(diagn[learn.indexes])[1])))
   } else {
-    model <- ksvm(trMatrix, diagn[learn.indexes], prob.model = prob, kernel="matrix", type="C-svc",C=cost,GAMMA = G )
+    model <- ksvm(trMatrix, diagn[learn.indexes], prob.model = prob, kernel="matrix", type="C-svc",C=cost )
   }
 
   # 5. Prediction
@@ -195,3 +194,4 @@ classify <- function(data, y, kernel,  prob=FALSE, classimb="no", type="ubOver",
   ct <- table(Truth=diagn[test.indexes], Pred=pred)
   return(ct)
 }
+

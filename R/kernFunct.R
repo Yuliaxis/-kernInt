@@ -5,6 +5,7 @@
 #' This function delivers the quantitative Jaccard kernel matrix, also known as Ruzicka similarity.
 #'
 #' @param data A matrix or data.frame containing nonnegative values.
+#' @param h An hyperparametr
 #' @return The quantitative Jaccard kernel matrix
 #' @examples
 #' example <- matrix(abs(rnorm(12)),nrow=4,ncol=3)
@@ -12,7 +13,7 @@
 #' @export
 
 
-qJacc <- function(data) {
+qJacc <- function(data,h) {
 
   data <- as.matrix(data)
   n <- nrow(data)
@@ -28,6 +29,7 @@ qJacc <- function(data) {
   tK <- t(K)
   K <- tK + K # Upper triangular matrix to symmetric matrix
   diag(K) <- 1
+  if(hasArg(h))  K <- exp(h*K)/exp(h)
   return(K)
 }
 
@@ -42,6 +44,7 @@ qJacc <- function(data) {
 #' decrease in Gini index (see below)
 #' @param y If a vector of weights is not provided, a vector of responses for computing the RF
 #' weights should be provided instead.
+#' @param h An hyperparametr
 #' @return The weighted quantitative Jaccard kernel matrix
 #' @examples
 #' example <- matrix(abs(rnorm(12)),nrow=4,ncol=3)
@@ -52,7 +55,7 @@ qJacc <- function(data) {
 #' @export
 
 
-wqJacc <- function(data, w, y) {
+wqJacc <- function(data, w, y, h) {
   if(!hasArg(w)) {
     if(hasArg(y)) {
       w <- rfweight(x=data,y=y,plot=FALSE)
@@ -64,7 +67,8 @@ wqJacc <- function(data, w, y) {
   if(length(w) != ncol(data)) stop(paste("Number of weights and number of variables do not coincide."))
 
   weidata <- t(w * t(data))
-  return(qJacc(data=weidata))
+
+  return(qJacc(data=weidata,h=h))
 }
 
 #' Aitchison distance kernel
@@ -93,10 +97,8 @@ aitch.dist <- function(data) {
 
 #' clr transf + RBF kernel
 #'
-#' clr transf + RBF kernel
-#'
 #' @param data A matrix or data.frame containing only positive values.
-#' @param g Gamma hyperparameter
+#' @param h Kernel hyperparameter (gamma)
 #' @return RBF kernel over a clr transformated data
 #' @examples
 #' example <- matrix(abs(rnorm(12)),nrow=4,ncol=3)
@@ -106,8 +108,9 @@ aitch.dist <- function(data) {
 #' @export
 #'
 
-clrRBF <- function(data,g=0.0001) {
-  aitch <- aitch.dist(data)
-  return(exp(-g*(aitch^2))) #RBF
+clrRBF <- function(data,h) {
+  K <- aitch.dist(data)
+  if(hasArg(h)) K <- exp(-h*(K^2)) #RBF
+  return(K)
 }
 

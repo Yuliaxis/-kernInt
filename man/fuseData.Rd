@@ -4,18 +4,20 @@
 \alias{fuseData}
 \title{Fuse Data}
 \usage{
-fuseData(DATA, kernel, y, coeff)
+fuseData(DATA, coeff, kernels, y, h)
 }
 \arguments{
 \item{DATA}{A list of the *m* data to fuse}
 
-\item{kernel}{A vector of length *m* with the kernels to use in each data}
-
-\item{y}{Only if "wqJac" is chosen: response variable}
-
 \item{coeff}{A vector of length *m* with the weight of each kernel data,
 or length(m) - 1 if the last coefficient is 1 - sum(coeff).
 If absent,  all data is considered equally important.}
+
+\item{kernels}{A vector of length *m* with the kernels to use in each data}
+
+\item{y}{Only if "wqJac" is chosen: response variable}
+
+\item{h}{Kernel hyperparameter (gamma)}
 }
 \value{
 A consensus kernel matrix (via calling KInt)
