@@ -94,9 +94,6 @@ Three different colors to represent acid pH, "intermediate" pH and basic pH:
 
 `rect.hclust(clustering , k = 3, border = c("aquamarine2", "orchid3","azure3"))`
 
-### Outlier detection
-
-`outliers(data=soilDataRaw,kernel="cRBF",nu=0.2)`
 
 ### SVM regression 
 
@@ -108,7 +105,7 @@ For example, if we want to predict the pH of soil (`y`) from the abundances (`da
 
 `regress(data=soilDataRaw[-89,], y=soilMetaData$ph[-89], kernel="cRBF")`
 
-If we have a pre-computed kernel matrix at hand, it can be passed as input to `data`. `kernel` should then be turned to `kernel=matrix`.
+If we have a pre-computed kernel matrix at hand, it can be passed as input to `data`. `kernel` should then be turned to `kernel="matrix"`.
 
 The SVM hyperparameters Cost (`C`) and Epsilon (`E`) can be specified, and also the proportion of data instances for the training set (`p`).
 
@@ -173,6 +170,24 @@ Also, `classify()` supports several methods to deal with imbalanced data:
 
 (falta)
 
+### Outlier detection
+
+The `outliers()` function can be used either in a supervised or in an unsupervised way.
+
+In the latter approach, the most basic call to this function needs only two arguments: `data` (predictor variables) and `kernel` (the kernel function used). 
+Then, the function will return the data outliers:
+
+`outliers(data=soilDataRaw,kernel="cRBF")`
+
+The nu hyperparameter (`nu`) and a generic kernel hyperparamete `H` can be entered:
+
+`outliers(data=soilDataRaw,kernel="cRBF",nu=0.2,H=05)`
+
+If an argument for `y` is provided, `outliers()` functions as an one-class SVM. In that case, cross-validation will be performed if `k` has an argument. Also,
+`p` stands for the proportion of data instances reserved for the training set 
+
+`outliers(data=soilDataRaw,kernel="cRBF",y=soilMetaData$ph,nu=0.2)`
+
 
 ## MKL
 
@@ -186,7 +201,7 @@ A vector of kernel names can be passed to the `kernel` argument. That way a diff
 
 `falta`
 
-The `coeff` argument is for the weight of each data type in the kernel combination:
+The `coeff` argument is for the weight of each data type in the kernel combination. When absent, the mean across all kernel matrices is performed.
 
 `falta`
 
