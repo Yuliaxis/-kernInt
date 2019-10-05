@@ -100,22 +100,37 @@ Three different colors to represent acid pH, "intermediate" pH and basic pH:
 
 ### SVM regression 
 
-We want to predict the pH of soil (`y`) from the abundances (`data`). 
-Being `cRBF` the Aitchison RBF kernel and `p` the proportion of data instances for the training set:
+SVM regression is performed via the `regress()` function.
 
-`regress(data=soilDataRaw[-89,], y=soilMetaData$ph[-89], kernel="cRBF",p=0.8)`
+The most basic call to this function needs only three arguments: `data` (predictor variables), `y` (target variable) and `kernel` (the kernel function used).
 
-We can perform k-Cross Validation to train the hyperparameters (Cost):
+For example, if we want to predict the pH of soil (`y`) from the abundances (`data`): 
 
-`regress(data=soilDataRaw[-89,], y=soilMetaData$ph[-89], kernel="cRBF", C=c(0.1,1,10), k=10, p=0.8)`
+`regress(data=soilDataRaw[-89,], y=soilMetaData$ph[-89], kernel="cRBF")`
 
-If the input data has repeated rownames, regress() will consider that the row names that share id are repeated measures 
+If we have a pre-computed kernel matrix at hand, it can be passed as input to `data`. `kernel` should then be turned to `kernel=matrix`.
+
+The SVM hyperparameters Cost (`C`) and Epsilon (`E`) can be specified, and also the proportion of data instances for the training set (`p`).
+
+`regress(data=soilDataRaw[-89,], y=soilMetaData$ph[-89], kernel="cRBF", p=0.6, C=5, E=0.001)`
+
+In addition, a generic kernel hyperparameter (`H`) can be specified. For example, if the chosen kernel is RBF, `H` will be interpreted as *gamma*: (*RBF(x,y) = exp(-gamma * ||x-y||^2*)
+
+`regress(data=soilDataRaw[-89,], y=soilMetaData$ph[-89], kernel="cRBF", C=5, H=0.1)`
+
+We can perform k-Cross Validation to train the hyperparameters. This is done providing an argument to `k`:
+
+`regress(data=soilDataRaw[-89,], y=soilMetaData$ph[-89], kernel="cRBF", C=c(1,5,10), E=c(0.001,0.1), k=10)`
+
+If the input data has repeated rownames, `regress()` will consider that the row names that share id are repeated measures 
 coming from the same individual. The function will ensure that all repeated measures are used either to train
-or to test the model, but not for both, thus preserving the independance between the training and tets sets.
+or to test the model, but not for both, thus preserving the independence between the training and tets sets.
 
 ### SVM classification
 
-We want to predict if a certain individual has IBD or not.
+The classical SVM classification is performed via the `classify()` function. One-class classification is available in the `outliers()` function.
+
+The usage of `classify()` is for the most part similar to that of `regress()`. For example, if we want to predict if a certain individual has IBD or not:
 
 `diag <- as.numeric(speMGX[,1])`
 
@@ -123,7 +138,12 @@ We want to predict if a certain individual has IBD or not.
 
 `classify(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",C=c(0.1,1,10), k=10)`
 
-`kernInt` supports several methods to deal with imbalanced data:
+Probabilistic classification is available setting `prob=TRUE`:
+
+`classify(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",prob=TRUE,C=c(0.1,1,10), k=10)`
+
+Both classify() and outliers() have the same treatment regarding repeated row names in the input data than `regress()`. 
+Also, `classify()` supports several methods to deal with imbalanced data:
 
 -Class weighting: 
 
@@ -153,7 +173,27 @@ We want to predict if a certain individual has IBD or not.
 
 (falta)
 
-Both classify() and outliers() have the same treatment regarding repeated row names in the input data than regress().
+
+## MKL
+
+MKL (Multiple Kernel Learning) is available to both `classify()` and `regress()`. All features of these two functions ara available when performing MKL. 
+
+To do MKL, the `data` argument must be a list of length > 1 or a tridimensional array. Each element of the list should be a data.frame or matrix:
+
+`falta`
+
+A vector of kernel names can be passed to the `kernel` argument. That way a different kernel will be applied to each data type: 
+
+`falta`
+
+The `coeff` argument is for the weight of each data type in the kernel combination:
+
+`falta`
+
+Kernel(s)' generic hyperparameter `H` can be a number (same hyperparameter for all data types), a vector (different hyperparameter for each data type 
+and not cross-validation) or a matrix (different set of hyperparametes for each kernel to chose through cross-validation).
+
+
 
 ## Data fusion
 
