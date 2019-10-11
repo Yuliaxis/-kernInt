@@ -41,28 +41,26 @@ outliers <- function(data,y,kernel,nu,p=0.8,k,H=0) {
     y <- as.factor(y)
     levels(y) <- c("0","1")
   }
+
+  if(class(data) == "list") {
+    m <- length(data)
+    if(m < 2) data <- unlist(data)
+  } else if(class(data) == "array") {
+    m <- dim(data)[3]
+    if(m < 2) data <- unlist(data)
+    data <- matrix(data[,,1],ncol=dim(data)[2],nrow=dim(data)[1])
+  } else if(class(data) == "data.frame" | class(data) == "matrix") {
+    m <- 1
+  } else {
+    stop("Wrong input data class.")
+  }
+
   Jmatrix <- kernelSelect(kernel,data,y)
 
   if(hasArg(y)){
-
-    ids <- as.factor(rownames(data))
-    N <-  nlevels(ids)
-    # N <- nrow(data)
-    all.indexes <- 1:N
-
-    learn.indexes <- trainIndx(n=N,ptrain=p)
-    test.indexes <- all.indexes[-learn.indexes]
-
-    ##Mostres vinculades
-    if(length(ids) > nlevels(ids)) {
-      trNames <- levels(ids)[learn.indexes]
-      teNames <-  levels(ids)[test.indexes]
-      learn.indexes <- which(ids %in% trNames)
-      test.indexes <- which(ids %in% teNames)
-    }
-
-    nlearn <- length(learn.indexes)
-    ntest <- N - nlearn
+    index <- finalTRTE(data,p) ## data és una matriu en aquest cas. passar-ho a MKL.
+    learn.indexes <- index$li
+    test.indexes <- index$ti
 
     trMatrix <- Jmatrix[learn.indexes,learn.indexes]
     teMatrix <- Jmatrix[test.indexes,learn.indexes]
@@ -80,10 +78,8 @@ outliers <- function(data,y,kernel,nu,p=0.8,k,H=0) {
       H <- H[1]
     }
 
-    if(H != 0)  {
-      trMatrix <- exp(H * trMatrix)/exp(H)
-      teMatrix <- exp(H * teMatrix)/exp(H)
-    }
+    trMatrix <- hyperkSelection(trMatrix,h=H,kernel=kernel)
+    teMatrix <- hyperkSelection(teMatrix,h=H,kernel=kernel)
 
     model <- ksvm(trMatrix,nu=nu, type="one-svc", kernel="matrix")
 
@@ -102,6 +98,5 @@ outliers <- function(data,y,kernel,nu,p=0.8,k,H=0) {
     get_index <- kernlab::predict(model)
     return(which(get_index[,1]==TRUE))
   }
-
 }
 

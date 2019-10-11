@@ -33,25 +33,23 @@
 
 regress <- function(data, y, kernel, p=0.8, C=1, H=0, E=0.1, k) {
 
-  # 1. TR/TE
-  ids <- as.factor(rownames(data))
-  N <-  nlevels(ids)
-  # N <- nrow(data)
-  all.indexes <- 1:N
-
-  learn.indexes <- trainIndx(n=N,ptrain=p)
-  test.indexes <- all.indexes[-learn.indexes]
-
-  ##Mostres vinculades
-  if(length(ids) > nlevels(ids)) {
-    trNames <- levels(ids)[learn.indexes]
-    teNames <-  levels(ids)[test.indexes]
-    learn.indexes <- which(ids %in% trNames)
-    test.indexes <- which(ids %in% teNames)
+  if(class(data) == "list") {
+    m <- length(data)
+    if(m < 2) data <- unlist(data)
+  } else if(class(data) == "array") {
+    m <- dim(data)[3]
+    if(m < 2) data <- unlist(data)
+    data <- matrix(data[,,1],ncol=dim(data)[2],nrow=dim(data)[1])
+  } else if(class(data) == "data.frame" | class(data) == "matrix") {
+    m <- 1
+  } else {
+    stop("Wrong input data class.")
   }
 
-  nlearn <- length(learn.indexes)
-  ntest <- N - nlearn
+  # 1. TR/TE
+  index <- finalTRTE(data,p)
+  learn.indexes <- index$li
+  test.indexes <- index$ti
 
   # 2. Compute kernel matrix
   Jmatrix <- kernelSelect(kernel,data,y)
@@ -59,7 +57,7 @@ regress <- function(data, y, kernel, p=0.8, C=1, H=0, E=0.1, k) {
   trMatrix <- Jmatrix[learn.indexes,learn.indexes]
   teMatrix <- Jmatrix[test.indexes,learn.indexes]
 
-  # 4. Do R x k-Cross Validation
+  # 3. Do R x k-Cross Validation
   if(hasArg(k)) {
     if(k<2) stop("k must be equal to or higher than 2")
     bh <- kCV.core(H = H, method="svr", kernel=kernel,EPS = E, COST = C, K=trMatrix, Y=y[learn.indexes], k=k, R=k)
@@ -75,10 +73,8 @@ regress <- function(data, y, kernel, p=0.8, C=1, H=0, E=0.1, k) {
     H <- H[1]
   }
 
-  if(H != 0)  {
-    trMatrix <- exp(H * trMatrix)/exp(H)
-    teMatrix <- exp(H * teMatrix)/exp(H)
-  }
+  trMatrix <- hyperkSelection(trMatrix,h=H,kernel=kernel)
+  teMatrix <- hyperkSelection(teMatrix,h=H,kernel=kernel)
 
   model <- ksvm(trMatrix, y[learn.indexes],type="eps-svr", kernel="matrix", C=cost, epsilon = eps)
 

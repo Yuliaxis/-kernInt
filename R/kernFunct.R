@@ -114,3 +114,63 @@ clrRBF <- function(data,h) {
   return(K)
 }
 
+# Covariance matrix
+#' @keywords internal
+covmat <- function(ind, visits, h) {
+  totalrows <- visits*ind
+  K <- matrix(0,nrow=totalrows,ncol=totalrows)
+  rownames(K) <- 1:totalrows
+  colnames(K) <- rownames(K)
+  if(!hasArg(h)) h <- 0.5
+  for(i in 1:ind) {
+    index <- ((i-1)*visits+1):(i*visits)
+    K[index,index] <- h
+  }
+  diag(K) <- 1
+  return(K)
+}
+
+
+#Kernel selection
+#' @keywords internal
+kernelSelect <- function(kernel,data,y,h) { #h és un hiperparàmetre
+  if(kernel == "qJac") {
+    cat("quantJaccard kernel\n")
+    return(qJacc(data,h))
+  } else if(kernel == "wqJac") {
+    cat("quantJaccard kernel + weights \n")
+    return(wqJacc(data,y=y,h))
+  }  else if(kernel == "cRBF") {
+    cat("clr + RBF \n")
+    return(aitch.dist(data))
+  } else if(kernel == "time") {
+    cat("Time matrix \n")
+    return(TimeK(data,h))
+  }else if(kernel == "cov") {
+    cat("Covariance matrix \n")
+    return(covmat(ind=data[1],visits=data[2],h))
+  } else if(kernel == "matrix" | kernel == "time2") {
+    cat("Pre-computed kernel matrix given \n")
+    return(as.matrix(data))
+  }   else {
+    cat("standard RBF \n")
+    # Jmatrix <-  kernelMatrix(rbfdot(sigma = G),data)
+    stop("Kernel not available.") ##temporalment
+
+  }
+}
+
+
+# Kernel computing for different types of data
+#' @keywords internal
+seqEval <- function(DATA,kernels,y,h) {
+  m <- length(DATA)
+  n <- nrow(DATA[[1]])
+  K <- array(0,dim=c(n,n,m))
+  for(i in 1:m) {
+    K[,,i] <- kernelSelect(data = DATA[[i]],  kernel = kernels[i],h)
+    print( K[,,i])
+  }
+  return(K)
+}
+

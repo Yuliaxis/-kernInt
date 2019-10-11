@@ -99,7 +99,7 @@ Three different colors to represent acid pH, "intermediate" pH and basic pH:
 
 SVM regression is performed via the `regress()` function.
 
-The most basic call to this function needs only three arguments: `data` (predictor variables), `y` (target variable) and `kernel` (the kernel function used).
+The most basic call to this function only needs three arguments: `data` (predictor variables), `y` (target variable) and `kernel` (the kernel function used).
 
 For example, if we want to predict the pH of soil (`y`) from the abundances (`data`): 
 
@@ -174,7 +174,7 @@ Also, `classify()` supports several methods to deal with imbalanced data:
 
 The `outliers()` function can be used either in a supervised or in an unsupervised way.
 
-In the latter approach, the most basic call to this function needs only two arguments: `data` (predictor variables) and `kernel` (the kernel function used). 
+In the latter approach, the most basic call to this function needs two arguments: `data` (predictor variables) and `kernel` (the kernel function used). 
 Then, the function will return the data outliers:
 
 `outliers(data=soilDataRaw,kernel="cRBF")`

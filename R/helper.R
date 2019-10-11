@@ -12,20 +12,6 @@ expand.grid.mod <- function(x, rep) { # x is a vector
   do.call(rbind, lapply(seq_along(x), g))
 }
 
-# Covariance matrix
-#' @keywords internal
-covmat <- function(ind, visits, cov) {
-  totalrows <- visits*ind
-  K <- matrix(0,nrow=totalrows,ncol=totalrows)
-  rownames(K) <- 1:totalrows
-  colnames(K) <- rownames(K)
-  for(i in 1:ind) {
-    index <- ((i-1)*visits+1):(i*visits)
-    K[index,index] <- cov
-  }
-  diag(K) <- 1
-  return(K)
-}
 
 
 #Training indexes
@@ -35,33 +21,139 @@ trainIndx <- function(n, ptrain = 0.8) {
   return(sort(sample(unord,round(ptrain*n))))
 }
 
-#Kernel selection
-#' @keywords internal
-kernelSelect <- function(kernel,data,y,h) { #h és un hiperparàmetre
-  if(kernel == "qJac") {
-    cat("quantJaccard kernel\n")
-    return(qJacc(data,h))
-  } else if(kernel == "wqJac") {
-    cat("quantJaccard kernel + weights \n")
-    return(wqJacc(data,y=y,h))
-  }  else if(kernel == "cRBF") {
-    cat("clr + RBF \n")
-    return(aitch.dist(data)) ## s'ha d'arreglar això, perquè ara mateix la gamma no es pot tocar.
-  } else if(kernel == "time") {
-    cat("Time matrix \n")
-    return(TimeK(data,h))
-  }else if(kernel == "cov") {
-    cat("Covariance matrix \n")
-    return(covmat(ind=data[1],visits=data[2],cov=h))
-  } else if(kernel == "matrix") {
-    cat("Pre-computed kernel matrix given \n")
-    return(data)
-  }   else {
-    cat("standard RBF \n")
-    # Jmatrix <-  kernelMatrix(rbfdot(sigma = G),data)
-    return(qJacc(data)) ##temporalment
 
+#Final tr and test indices
+#' @keywords internal
+ids <- function(x) UseMethod("ids",x)
+
+ids.list <- function(x) return(as.factor(rownames(x[[1]])))
+ids.array <- function(x) return(as.factor(dimnames(x)[[1]]))
+ids.data.frame <- function(x) return( as.factor(rownames(x)))
+ids.matrix <- function(x) return(as.factor(rownames(x)))
+
+#Final tr and test indices
+#' @keywords internal
+
+finalTRTE  <- function(data,p) {
+
+  id <-ids(data)
+  N <-  nlevels(id)
+  # N <- nrow(data)
+  all.indexes <- 1:N
+
+  learn.indexes <- trainIndx(n=N,ptrain=p)
+  test.indexes <- all.indexes[-learn.indexes]
+
+  ##Mostres vinculades
+  if(length(id) > nlevels(id)) {
+    trNames <- levels(id)[learn.indexes]
+    teNames <-  levels(id)[test.indexes]
+    learn.indexes <- which(id %in% trNames)
+    test.indexes <- which(id %in% teNames)
+    #Unique test - si es vol llevar, comentar aquestes 4 línies.
+    names(test.indexes) <- id[which(id %in% teNames)]
+    test.indexes <- sample(test.indexes)[teNames]
+    names(test.indexes) <- NULL
+    test.indexes <- sort(test.indexes)
   }
+  return(list(li=learn.indexes,ti=test.indexes))
+}
+
+#Final tr and test indices
+#' @keywords internal
+
+sampl <- function(data, diagn, learn.indexes, test.indexes, kernel, type) {
+  nlearn <- length(learn.indexes)
+  ntest <- length(test.indexes)
+  N <- nlearn + ntest
+  diagn <- diagn[c(learn.indexes,test.indexes)]
+  print(nlearn)
+  Sample <- dataSampl(data, diagn, nlearn=nlearn, N=N, learn.indexes,test.indexes, kernel=kernel, type)
+
+  data <- Sample$data
+  diagn <- Sample$diagn
+  nlearn <- Sample$nlearn
+  N <- nrow(data)
+
+  learn.indexes <- 1:nlearn
+  test.indexes <- (nlearn+1):N
+  return(list(data=data,y=diagn,li=learn.indexes,ti=test.indexes))
+}
+
+dataSampl <- function(data, diagn, nlearn, N, learn.indexes,test.indexes, kernel, type)  UseMethod("dataSampl",data)
+
+dataSampl.array <- function(data, diagn, nlearn, N, learn.indexes,test.indexes, kernel, type) {
+
+  if(kernel == "matrix") {
+    if(type == "ubSMOTE") stop("Kernel matrix as input is not compatible with SMOTE. Original dataset is required.")
+
+    dades <- data[c(learn.indexes,test.indexes),c(learn.indexes,test.indexes),]
+    dadespr <- dades[,,1]
+    rownames(dadespr) <- 1:N
+
+    if(type == "ubOver")  SobrDadesTr <- ubBalance(dadespr[1:nlearn,], diagn[1:nlearn], type=type, positive=2, k=0)
+    if(type == "ubUnder")  SobrDadesTr <- ubBalance(dadespr[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
+
+    ii <- c(as.numeric(rownames(SobrDadesTr$X)),(nlearn+1):N)
+    data <- data[ii,ii,]
+    diagn <- diagn[ii]
+    # N <- nrow(data)
+    nlearn <- length(SobrDadesTr$Y)
+  } else {
+    stop("Option not available yet.")
+  }
+  return(list(data=data,diagn=diagn,nlearn=nlearn))
+}
+
+
+dataSampl.list <- function(data, diagn, nlearn, N, learn.indexes,test.indexes, kernel, type) {
+  m <- length(data)
+
+    if(type == "ubSMOTE") {
+      SobrDadesTr <- list()
+      for(i in 1:m) SobrDadesTr[[i]] <- ubBalance(dades[[i]][1:nlearn,], diagn[1:nlearn], type=type, positive=2)
+    } else {
+      dadespr <- dades[[1]]
+      rownames(dadespr) <- 1:N
+      if(type == "ubOver")  SobrDadesTr <- ubBalance(dadespr[1:nlearn,], diagn[1:nlearn], type=type, positive=2, k=0)
+      if(type == "ubUnder")  SobrDadesTr <- ubBalance(dadespr[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
+      ii <- c(as.numeric(rownames(SobrDadesTr$X)),(nlearn+1):N)
+      diagn <- diagn[ii]
+      nlearn <- length(SobrDadesTr$Y)
+      for(i in 1:m) data[[i]] <- data[[i]][ii,]
+    }
+  return(list(data=data,diagn=diagn,nlearn=nlearn))
+}
+
+dataSampl.default <- function(data, diagn, nlearn, N, learn.indexes,test.indexes, kernel, type) {
+  if(kernel == "matrix") {
+    if(type == "ubSMOTE") stop("Kernel matrix as input is not compatible with SMOTE. Original dataset is required.")
+
+    dades <- data[c(learn.indexes,test.indexes),c(learn.indexes,test.indexes)]
+    rownames(dades) <- 1:N
+
+    if(type == "ubOver")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2, k=0)
+    if(type == "ubUnder")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
+
+    ii <- c(as.numeric(rownames(SobrDadesTr$X)),(nlearn+1):N)
+    data <- data[ii,ii]
+    diagn <- diagn[ii]
+    # N <- nrow(data)
+    nlearn <- length(SobrDadesTr$Y)
+  } else {
+    dades <- data[c(learn.indexes,test.indexes),]
+
+    if(type == "ubUnder") SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
+    if(type == "ubOver") SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2,  k=0)
+    if(type == "ubSMOTE") SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
+    data <- rbind(SobrDadesTr$X,dades[(nlearn+1):N,])
+    nlearn <- length(SobrDadesTr$Y)
+    # N <- nrow(data)
+    diagn <- c(SobrDadesTr$Y, diagn[test.indexes])
+    diagn <- as.factor(diagn)
+  }
+  return(list(data=data,diagn=diagn,nlearn=nlearn))
+
 }
 
 
@@ -74,12 +166,12 @@ hyperkSelection <- function(K, h, kernel) {
       Kmatrix <- K
     } else { Kmatrix <- exp(h*K)/exp(h) #Standardized Kernel Matrix. Otherwise exp(g*K)
     }
-  } else if(kernel == "cRBF" | kernel == "time") {
+  } else if(kernel == "cRBF" | kernel == "time" | kernel == "time2") {
     Kmatrix <- exp(-h*K)
   } else if(kernel == "cov") {
-    # Kmatrix <- covmat(?,?,p=h)
-    stop("Kernel not available yet.")
-
+    Kmatrix <- K
+    Kmatrix[Kmatrix!=0] <- h
+    diag(Kmatrix) <- 1
   } else if(kernel == "matrix") {
     Kmatrix <- K
   } else {
@@ -88,167 +180,6 @@ hyperkSelection <- function(K, h, kernel) {
   return(Kmatrix)
 }
 
-# Kernel computing for different types of data
-#' @keywords internal
-seqEval <- function(DATA,kernels,y,h) {
-  m <- length(DATA)
-  n <- nrow(DATA[[1]])
-  K <- array(0,dim=c(n,n,m))
-  for(i in 1:m)  K[,,i] <- kernelSelect(data = DATA[[i]],  k = kernels[i],h=h)
-  return(K)
-}
-
-
-## K-fold cross- validation
-#' @keywords internal
-#' @importFrom kernlab ksvm cross
-
-kCV <- function(GAMMA, CUT, COST, K, Yresp, k, R, prob, classimb=FALSE) {
-
-  # on Y és el vector resposta, i K.train la submatriu amb els individus de training
-  min.error <- Inf
-  cut <- 0.5
-  for (g in GAMMA){
-    if (g == 0) {
-      Kmatrix <- K
-    } else { Kmatrix <- exp(g*K)/exp(g) #Standardized Kernel Matrix. Otherwise exp(g*K)
-    }
-
-    for (c in COST){
-        Kmatrix <- K
-        Y <- Yresp
-        outer.error <- vector(mode="numeric",length=R)
-          for (o in 1:R) {
-            unordered <- sample.int(nrow(Kmatrix))
-            Kmatrix <- Kmatrix[unordered,unordered]
-            Y <- Y[unordered]
-            if(classimb)  {
-              K.model <- ksvm(Kmatrix, Y, type="C-svc",kernel="matrix",C=c,cross=k,
-                                         class.weights=c("1"=as.numeric(summary(Yresp)[2]),"2"=as.numeric(summary(Yresp)[2]))) # Rular el mètode
-            } else if (prob & hasArg(CUT)) {
-              N <- trunc(nrow(Kmatrix)/k,digits=0)
-              PRED <- matrix(NA,ncol=1,nrow=nrow(Kmatrix))
-              # rownames(PRED) <- as.character(Y)
-              for(p in 0:(k-1)) {
-                if(p < (k-1)) {
-                  indexTE <- (1+(p*N)):((p+1)*N)
-                  } else {
-                  indexTE <- (1+(p*N)):nrow(Kmatrix)
-                  }
-                TEST <- Kmatrix[indexTE,-indexTE]
-                K.model <- ksvm(Kmatrix[-indexTE,-indexTE], Y[-indexTE], type="C-svc",kernel="matrix",prob.model=prob,C=c) # Rular el mètode
-                TEST <- TEST[,SVindex(K.model),drop=FALSE]
-                TEST <- as.kernelMatrix(TEST)
-                pred <- predict(K.model,TEST,type = "probabilities")
-                PRED[indexTE,1] <- pred[,2] #minority class
-              }
-              PRED <- na.omit(PRED)
-              acu <- vector(mode="numeric",length=length(cut))
-              for(cut in 1:length(CUT)) {
-                  pr <- (PRED < CUT[cut])
-                  pr[pr] <- 1
-                  pr[pr==0] <- 2
-                  acu[cut] <- sum(as.numeric(Y) == pr)/nrow(pr) # És ok aquesta aproximació??
-              }
-              cut <- CUT[which.max(acu)]
-              outer.error[o] <- max(acu)
-            } else {
-              K.model <- ksvm(Kmatrix, Y, type="C-svc",kernel="matrix",prob.model=prob,C=c,cross=k) # Rular el mètode
-
-            }
-            if(!prob) outer.error[o] <- cross(K.model) # La mitjana dels errors és l'error de CV
-          }
-          v.error <- mean(outer.error)
-          print(v.error)
-          if (min.error > v.error) {   # < o <= ???
-             min.error <- v.error
-             best.cost <- c
-             best.g <- g
-             best.cut <- cut
-          }
-    }
-  }
-  print(best.cut)
-  best.hyp <- data.frame(cost=best.cost,gamma=best.g,cut=best.cut,error= min.error)
-  return(best.hyp)
-}
-
-
-## K-fold cross- validation (one-class SVM)
-#' @keywords internal
-#' @importFrom kernlab ksvm cross
-
-kCV.one <- function(GAMMA, K, Yresp, NU, k=k, R=k) {
-  min.error <- Inf
-  for (g in GAMMA){
-    if (g == 0) {
-      Kmatrix <- K
-    } else {
-      Kmatrix <- exp(g*K)/exp(g) #Standardized Kernel Matrix. Otherwise exp(g*K)
-    }
-
-    for (nu in NU) {
-      Kmatrix <- K
-      Y <- Yresp
-      outer.error <- vector(mode="numeric",length=R)
-      for (o in 1:R) {
-        unordered <- sample.int(nrow(Kmatrix))
-        Kmatrix <- Kmatrix[unordered,unordered]
-        Y <- Y[unordered]
-        K.model <- ksvm(Kmatrix, Y, type="one-svc", kernel="matrix",nu=nu,cross=k) # Rular el mètode
-        outer.error[o] <- cross(K.model) # La mitjana dels errors és l'error de CV
-      }
-      v.error <- mean(outer.error)
-      print(v.error)
-      if (min.error > v.error) {   # < o <= ???
-        min.error <- v.error
-        best.h1 <- nu
-        best.h2 <- g
-      }
-    }
-  }
-best.hyp <- data.frame(nu=best.h1,g=best.h2, error= min.error)
-return(best.hyp)
-}
-
-## K-fold cross- validation (regression)
-#' @keywords internal
-#' @importFrom kernlab ksvm cross
-
-kCV.reg <-function(EPS, COST, GAMMA, K, Yresp, k, R) {
-
-  # on Y és el vector resposta, i K.train la submatriu amb els individus de training
-  min.error <- Inf
-  for (g in GAMMA){
-    if (g == 0) {
-      Kmatrix <- K
-    } else { Kmatrix <- exp(g*K)/exp(g) #Standardized Kernel Matrix. Otherwise exp(g*K)
-    }
-    Y <- Yresp
-    for (e in EPS) {
-      for (c in COST){
-        outer.error <- vector(mode="numeric",length=R)
-        for (o in 1:R) {
-          unordered <- sample.int(nrow(Kmatrix))
-          Kmatrix <- Kmatrix[unordered,unordered]
-          Y <- Y[unordered]
-          K.model <- ksvm(Kmatrix,Y,type="eps-svr",kernel="matrix",C=c,epsilon=e, cross=k) # Rular el mètode
-          outer.error[o] <- cross(K.model) # La mitjana dels errors és l'error de CV
-        }
-        v.error <- mean(outer.error)
-        # print(v.error)
-        if (min.error > v.error) {   # < o <= ???
-          min.error <- v.error
-          best.cost <- c
-          best.e <- e
-          best.g <- g
-        }
-      }
-    }
-  }
-  best.hyp <- data.frame(cost=best.cost,epsilon=best.e,gamma=best.g,error= min.error)
-  return(best.hyp)
-}
 ##  NMSE (regression)
 #' @keywords internal
 error.norm <- function(target,prediction) {

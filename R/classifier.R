@@ -22,17 +22,21 @@
 #'
 #' Currently, the classification can be only performed if the target variable is binary (two classes).
 #'
-#' @param data Input data
+#' @param data Input data: a matrix or data.frame with predictor variables. To perform MKL: a list of the *m* types of data to combine.
 #' @param y Reponse variable (binary)
 #' @param kernel "cRBF" for clrRBF, "qJac" for quantitative Jaccard,  "wqJac" for quantitative Jaccard with weights.
-#' "matrix" if a pre-calculated kernel matrix is given as input.
+#' "matrix" if a pre-calculated kernel matrix is given as input. To perform MKL: Vector of *m* kernels to apply to each data type.
+#' @param coeff ONLY IN MKL CASE: A *t·m* matrix of the coefficients, where *m* are the number of different data types and *t* the number of
+#' different coefficient combinations to evaluate via k-CV.
 #' @param prob if TRUE class probabilities (soft-classifier) are computed instead of a True-or-false assignation (hard-classifier)
 #' @param classimb "weights" to introduce class weights in the SVM algorithm and "data" to oversampling. If other arguments are provided nothing is done.
 #' @param type If classimb = "data", the procedure to data oversampling or undersampling ("ubOver","ubUnder" or "ubSMOTE")
 #' @param p Proportion of total data instances in the training set
 #' @param k The k for the k-Cross Validation. Minimum k = 2. If no argument is provided cross-validation is not performed.
 #' @param C The cost. A vector with the possible costs (SVM hyperparameter) to evaluate via k-Cross-Val can be entered too.
-#' @param H Gamma hyperparameter. A vector with the possible gammas to evaluate via k-Cross-Val can be entered too.
+#' @param H Gamma hyperparameter. A vector with the possible values to chose the best one via k-Cross-Val can be entered.
+#' For the MKL, a matrix *n·m*  with the possible hyperparameters can be entered, being' *m* is the number of different data types,
+#' and *n* the number of different hyperparameters.
 #' @param CUT Cut-off if prob = TRUE. If CUT is a vector, the best cut-off can be obtained via cross-validation.
 #' @return Confusion matrix or, if prob = TRUE and not cutoff is set, a data.frame with the class probability and the actual class.
 #' @examples
@@ -54,96 +58,71 @@
 
 
 
-classify <- function(data, y, kernel,  prob=FALSE, classimb="no", type="ubOver", p=0.8, k, C=1, H=0, CUT) {
+classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="ubOver", p=0.8, k, C=1, H=0, CUT=NULL) {
 
-  # 1. Classes
+  # y class
   diagn <- as.factor(y)
   levels(diagn) <- c("1","2")
 
+  # data class
+  if(class(data) == "list") {
+    m <- length(data)
+    if(m < 2) data <- unlist(data)
+  } else if(class(data) == "array") {
+    m <- dim(data)[3]
+    if(m < 2) data <- unlist(data)
+    data <- matrix(data[,,1],ncol=dim(data)[2],nrow=dim(data)[1])
+  } else if(class(data) == "data.frame" | class(data) == "matrix") {
+    m <- 1
+  } else {
+    stop("Wrong input data class.")
+  }
+
   # 1. TR/TE
+  index <- finalTRTE(data,p) ## data és una matriu en aquest cas. passar-ho a MKL.
+  learn.indexes <- index$li
+  test.indexes <- index$ti
+  print(learn.indexes)
+  print(diagn[learn.indexes])
 
-  ids <- as.factor(rownames(data))
-  N <-  nlevels(ids)
-  # N <- nrow(data)
-  all.indexes <- 1:N
-
-  learn.indexes <- trainIndx(n=N,ptrain=p)
-  test.indexes <- all.indexes[-learn.indexes]
-
-  ##Mostres vinculades
-  if(length(ids) > nlevels(ids)) {
-    trNames <- levels(ids)[learn.indexes]
-    teNames <-  levels(ids)[test.indexes]
-    learn.indexes <- which(ids %in% trNames)
-    test.indexes <- which(ids %in% teNames)
-    #Unique test - si es vol llevar, comentar aquestes 4 línies.
-    names(test.indexes) <- ids[which(ids %in% teNames)]
-    test.indexes <- sample(test.indexes)[teNames]
-    names(test.indexes) <- NULL
-    test.indexes <- sort(test.indexes)
+  if(classimb == "weights") {
+    wei <- c("1"=as.numeric(summary(diagn[learn.indexes])[2]),"2"=as.numeric(summary(diagn[learn.indexes])[1]))
+  } else {
+    wei <- NULL
   }
 
   if(classimb=="data")  {
-
-    nlearn <- length(learn.indexes)
-    ntest <- length(test.indexes)
-    N <- nlearn + ntest
-
-    diagn <- diagn[c(learn.indexes,test.indexes)]
-    if(kernel == "matrix") {
-      if(type == "ubSMOTE") stop("Kernel matrix as input is not compatible with SMOTE. Original dataset is required.")
-
-      dades <- data[c(learn.indexes,test.indexes),c(learn.indexes,test.indexes)]
-      rownames(dades) <- 1:N
-
-      if(type == "ubOver")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2, k=0)
-      if(type == "ubUnder")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
-
-      ii <- c(as.numeric(rownames(SobrDadesTr$X)),(nlearn+1):N)
-      data <- data[ii,ii]
-      diagn <- diagn[ii]
-      N <- nrow(data)
-      nlearn <- length(SobrDadesTr$Y)
-      learn.indexes <- 1:nlearn
-      test.indexes <- (nlearn+1):N
-    } else {
-    dades <- data[c(learn.indexes,test.indexes),]
-
-    if(type == "ubUnder") SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
-    if(type == "ubOver") SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2,  k=0)
-    if(type == "ubSMOTE") SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
-    data <- rbind(SobrDadesTr$X,dades[(nlearn+1):N,])
-    nlearn <- length(SobrDadesTr$Y)
-    N <- nrow(data)
-    diagn <- c(SobrDadesTr$Y, diagn[test.indexes])
-    diagn <- as.factor(diagn)
-    learn.indexes <- 1:nlearn
-    test.indexes <- (nlearn+1):N
-    }
-
+    s <- sampl(data=data,diagn=diagn,learn.indexes=learn.indexes,test.indexes=test.indexes,kernel=kernel,type=type)
+    data <- s$data
+    diagn <- s$y
+    learn.indexes <- s$li
+    test.indexes <- s$ti
   }
 
-  if(classimb == "weights")  {
-    wei <- TRUE
+    # 2. Compute kernel matrix
+
+  if(m>1) {
+    Jmatrix  <- seqEval(DATA=data, y=diagn, kernels=kernel) ## Sense especificar hiperparàmetre.
+    trMatrix <- Jmatrix[learn.indexes,learn.indexes,]
+    teMatrix <- Jmatrix[test.indexes,learn.indexes,]
   } else {
-    wei <- FALSE
+    Jmatrix <- kernelSelect(kernel,data,y)
+    trMatrix <- Jmatrix[learn.indexes,learn.indexes]
+    teMatrix <- Jmatrix[test.indexes,learn.indexes]
   }
 
-  # 2. Compute kernel matrix
-  Jmatrix <- kernelSelect(kernel,data,y)
-
-  trMatrix <- Jmatrix[learn.indexes,learn.indexes]
-  teMatrix <- Jmatrix[test.indexes,learn.indexes]
-
-  # 4. Do R x k-Cross Validation
+  # 3. Do R x k-Cross Validation
   if(hasArg(k)) {
-    if(k<2) stop("k must be equal to or higher than 2")
-    if(hasArg(CUT)) {
-       bh <- kCV.core(method="svc",COST = C, H = H, kernel=kernel,CUT=CUT, K=trMatrix, prob=prob, Y=diagn[learn.indexes], k=k, R=k,classimb=wei)
-       cut <- bh$cut
-       } else {
-       bh <- kCV.core(method="svc",COST = C, H = H, kernel=kernel, K=trMatrix, prob=prob, Y=diagn[learn.indexes], k=k, R=k,classimb=wei)
-      }
+    if(k<2) stop("k should be equal to or higher than 2")
+    if(m>1)  {
+      bh <- kCV.MKL(ARRAY=trMatrix, COEFF=coeff, KERNH=H, kernels=kernel, method="svc",COST = C,
+                    CUT=CUT, Y=diagn[learn.indexes], k=k, R=k,classimb=wei)
+      coeff <- bh$coeff ##indexs
+    } else {
+    bh <- kCV.core(method="svc",COST = C, H = H, kernel=kernel, CUT=CUT, K=trMatrix, prob=prob,
+                   Y=diagn[learn.indexes], k=k, R=k,classimb=wei)
+    }
+    cut <- bh$cut
     cost <- bh$cost
     H <- bh$h
 
@@ -152,40 +131,45 @@ classify <- function(data, y, kernel,  prob=FALSE, classimb="no", type="ubOver",
     cost <- C[1]
     if(length(H)>1) paste("H > 1 and no k provided- Only the first element will be used")
     H <- H[1]
-    if(hasArg(CUT) && length(CUT)>1) {
+    if(!is.null(CUT) && length(CUT)>1) {
       paste("CUT > 1 and no k provided - Only the first element will be used")
       CUT <- CUT[1]
     }
   }
 
-  if(H != 0)  {
-    trMatrix <- exp(H * trMatrix)/exp(H)
-    teMatrix <- exp(H * teMatrix)/exp(H)
+  if(m>1) {
+    for(j in 1:m) trMatrix[,,j] <- hyperkSelection(K=trMatrix[,,j], h=H,  kernel=kernel[j])
+    for(j in 1:m) teMatrix[,,j] <- hyperkSelection(K=teMatrix[,,j], h=H,  kernel=kernel[j])
+    trMatrix <- KInt(data=trMatrix,coeff=coeff)
+    teMatrix <- KInt(data=teMatrix,coeff=coeff)
+  }  else {
+    trMatrix <- hyperkSelection(trMatrix,h=H,kernel=kernel)
+    teMatrix <- hyperkSelection(teMatrix,h=H,kernel=kernel)
   }
 
-  if(wei) {
-    model <- ksvm(trMatrix, diagn[learn.indexes], kernel="matrix", type="C-svc",
-                  C=cost, class.weights=c("1"=as.numeric(summary(diagn[learn.indexes])[2]),"2"=as.numeric(summary(diagn[learn.indexes])[1])))
-  } else {
-    model <- ksvm(trMatrix, diagn[learn.indexes], prob.model = prob, kernel="matrix", type="C-svc",C=cost )
-  }
+  # 4. Model
+print(trMatrix)
+print(diagn[learn.indexes])
+  model <- ksvm(trMatrix, diagn[learn.indexes], kernel="matrix", type="C-svc", prob.model = prob, C=cost, class.weights=wei)
+
+  print("model")
+
 
   # 5. Prediction
 
   teMatrix <- teMatrix[,SVindex(model),drop=FALSE]
   teMatrix <- as.kernelMatrix(teMatrix)
-
+print(dim(teMatrix))
   if(prob)  {
     pred <- predict(model,teMatrix,type = "probabilities")
-    if(!hasArg(CUT)) {
+    if(is.null(CUT)) {
       return(data.frame(Actual=diagn[test.indexes],Predicted = as.factor(pred)))
     }
     print(paste("Best cut is", cut))
     pred <- (pred[,2] < cut)
     pred[pred] <- 1
     pred[pred==0] <- 2
-    }
-  else    { pred <- kernlab::predict(model,teMatrix) }
+    }   else    { pred <- kernlab::predict(model,teMatrix) }
    pred <- as.factor(pred)
    levels(pred) <- c("1","2")
    print(pred)

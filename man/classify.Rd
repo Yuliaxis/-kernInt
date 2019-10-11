@@ -4,16 +4,19 @@
 \alias{classify}
 \title{SVM classifier}
 \usage{
-classify(data, y, kernel, prob = FALSE, classimb = "no",
-  type = "ubOver", p = 0.8, k, C = 1, H = 0, CUT)
+classify(data, y, coeff, kernel, prob = FALSE, classimb = "no",
+  type = "ubOver", p = 0.8, k, C = 1, H = 0, CUT = NULL)
 }
 \arguments{
-\item{data}{Input data}
+\item{data}{Input data: a matrix or data.frame with predictor variables. To perform MKL: a list of the *m* types of data to combine.}
 
 \item{y}{Reponse variable (binary)}
 
+\item{coeff}{ONLY IN MKL CASE: A *t·m* matrix of the coefficients, where *m* are the number of different data types and *t* the number of
+different coefficient combinations to evaluate via k-CV.}
+
 \item{kernel}{"cRBF" for clrRBF, "qJac" for quantitative Jaccard,  "wqJac" for quantitative Jaccard with weights.
-"matrix" if a pre-calculated kernel matrix is given as input.}
+"matrix" if a pre-calculated kernel matrix is given as input. To perform MKL: Vector of *m* kernels to apply to each data type.}
 
 \item{prob}{if TRUE class probabilities (soft-classifier) are computed instead of a True-or-false assignation (hard-classifier)}
 
@@ -27,7 +30,9 @@ classify(data, y, kernel, prob = FALSE, classimb = "no",
 
 \item{C}{The cost. A vector with the possible costs (SVM hyperparameter) to evaluate via k-Cross-Val can be entered too.}
 
-\item{H}{Gamma hyperparameter. A vector with the possible gammas to evaluate via k-Cross-Val can be entered too.}
+\item{H}{Gamma hyperparameter. A vector with the possible values to chose the best one via k-Cross-Val can be entered.
+For the MKL, a matrix *n·m*  with the possible hyperparameters can be entered, being' *m* is the number of different data types,
+and *n* the number of different hyperparameters.}
 
 \item{CUT}{Cut-off if prob = TRUE. If CUT is a vector, the best cut-off can be obtained via cross-validation.}
 }

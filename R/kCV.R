@@ -6,7 +6,7 @@ kCV.class <- function(CUT, COST, K, Yresp, k, R, prob, classimb=FALSE) {
 
   # on Y és el vector resposta, i K.train la submatriu amb els individus de training
   min.error <- Inf
-  cut <- 0.5
+  if(is.null(CUT)) cut <- 0.5
 
   for (c in COST){
 
@@ -15,10 +15,7 @@ kCV.class <- function(CUT, COST, K, Yresp, k, R, prob, classimb=FALSE) {
       unordered <- sample.int(nrow(K))
       Kmatrix <- K[unordered,unordered]
       Y <- Yresp[unordered]
-      if(classimb)  {
-        K.model <- ksvm(Kmatrix, Y, type="C-svc",kernel="matrix",C=c,cross=k,
-                        class.weights=c("1"=as.numeric(summary(Y)[2]),"2"=as.numeric(summary(Y)[2]))) # Rular el mètode
-      } else if (prob & hasArg(CUT)) {
+      if(prob & hasArg(CUT)) {
         N <- trunc(nrow(Kmatrix)/k,digits=0)
         PRED <- matrix(NA,ncol=1,nrow=nrow(Kmatrix))
         # rownames(PRED) <- as.character(Y)
@@ -46,7 +43,7 @@ kCV.class <- function(CUT, COST, K, Yresp, k, R, prob, classimb=FALSE) {
         cut <- CUT[which.max(acu)]
         outer.error[o] <- max(acu)
       } else {
-        K.model <- ksvm(Kmatrix, Y, type="C-svc",kernel="matrix",prob.model=prob,C=c,cross=k) # Rular el mètode
+        K.model <- ksvm(Kmatrix, Y, type="C-svc",kernel="matrix",prob.model=prob,class.weights=classimb,C=c,cross=k) # Rular el mètode
         }
       if(!prob) outer.error[o] <- cross(K.model) # La mitjana dels errors és l'error de CV
     }
@@ -146,13 +143,13 @@ kCV.core <- function(H, kernel, method, K, ...) {
     }
   }
 
-  best.hyp <- data.frame(hyper=best.h,cost=best.cost,epsilon=best.e,cut=best.cut,nu=best.nu,error= min.error)
+  best.hyp <- data.frame(h=best.h,cost=best.cost,epsilon=best.e,cut=best.cut,nu=best.nu,error= min.error)
   return(best.hyp)
 }
 
 ## kCV procedure if MKL is being performed
 #' @keywords internal
-kCV.MKL <- function(ARRAY, COEFF, KERNH, kernels, ...) {
+kCV.MKL <- function(ARRAY, COEFF, KERNH, kernels, method, ...) {
   min.error <- Inf
   nhyp <- length(KERNH)
   ARRAY2 <- matrix(0,dim=c(dim(ARRAY)[1],dim(ARRAY)[2],nhyp))
@@ -160,29 +157,32 @@ kCV.MKL <- function(ARRAY, COEFF, KERNH, kernels, ...) {
     j <- ceiling(k/nrow(KERNH))
     ARRAY2[,,k] <- hyperkSelection(ARRAY[,,j],h=KERNH[[k]],kernel=kernels[j])
   }
-  indexes <- expand.grid(1:nrow(KERNH),1:nrow(KERNH))
-  for(i in 1:nrow(COEFF)) {
+  indexes <- expand.grid(rep(1:nrow(KERNH),ncol(KERNH)))
+  m <- nrow(COEFF)
+  for(i in 1:m) {
     for(k in 1:nrow(indexes)) {
       Kmatrix <- KInt(ARRAY2[,,indexes[k,]],coeff=COEFF[i,])
       if(method == "svc") {
-        bh <- kCV.class(...) ## calls svm classification
+        bh <- kCV.class(Kmatrix,...) ## calls svm classification
       } else if(method == "svr") { ## smv calls regression
-        bh <- kCV.reg(...)
+        bh <- kCV.reg(Kmatrix,...)
       } else { ## calls one-class svm
-        bh <- kCV.one(...)
+        bh <- kCV.one(Kmatrix,...)
       }
       if (min.error > bh$error) {
-        best.h <- h
+        ii <- indexes[k,]
         best.cost <- bh$cost
         best.e <- bh$epsilon
         best.cut <- bh$cut
         best.nu <- bh$nu
-        best.coeff <- i ##No es retornen es coeficients, sinó a quina fila estan
+        best.coeff <- COEFF[i,]
         min.error <- bh$error
-        #### I els hiperparàmetres de cada matriu???
       }
     }
   }
-  best.hyp <- data.frame(index=best.coeff,hyper=best.h,cost=best.cost,epsilon=best.e,cut=best.cut,nu=best.nu,error= min.error)
+  ii <- matrix(c(ii,1:length(ii)),ncol=2)
+  best.h <- rep(0,m)
+  for(j in 1:m) best.h[j] <- KERNH[ii[j],j]
+  best.hyp <- list(coeff=best.coeff,h=best.h,cost=best.cost,epsilon=best.e,cut=best.cut,nu=best.nu,error= min.error)
   return(best.hyp)
 }
