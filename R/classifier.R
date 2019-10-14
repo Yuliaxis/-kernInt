@@ -82,8 +82,6 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
   index <- finalTRTE(data,p) ## data és una matriu en aquest cas. passar-ho a MKL.
   learn.indexes <- index$li
   test.indexes <- index$ti
-  print(learn.indexes)
-  print(diagn[learn.indexes])
 
   if(classimb == "weights") {
     wei <- c("1"=as.numeric(summary(diagn[learn.indexes])[2]),"2"=as.numeric(summary(diagn[learn.indexes])[1]))
@@ -112,11 +110,13 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
   }
 
   # 3. Do R x k-Cross Validation
+
   if(hasArg(k)) {
     if(k<2) stop("k should be equal to or higher than 2")
     if(m>1)  {
+      if(!hasArg(coeff)) coeff <- rep(1/m,m)
       bh <- kCV.MKL(ARRAY=trMatrix, COEFF=coeff, KERNH=H, kernels=kernel, method="svc",COST = C,
-                    CUT=CUT, Y=diagn[learn.indexes], k=k, R=k,classimb=wei)
+                    CUT=CUT, Y=diagn[learn.indexes], k=k,  prob=prob, R=k,classimb=wei)
       coeff <- bh$coeff ##indexs
     } else {
     bh <- kCV.core(method="svc",COST = C, H = H, kernel=kernel, CUT=CUT, K=trMatrix, prob=prob,
@@ -148,18 +148,14 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
   }
 
   # 4. Model
-print(trMatrix)
-print(diagn[learn.indexes])
+
   model <- ksvm(trMatrix, diagn[learn.indexes], kernel="matrix", type="C-svc", prob.model = prob, C=cost, class.weights=wei)
-
-  print("model")
-
 
   # 5. Prediction
 
   teMatrix <- teMatrix[,SVindex(model),drop=FALSE]
   teMatrix <- as.kernelMatrix(teMatrix)
-print(dim(teMatrix))
+
   if(prob)  {
     pred <- predict(model,teMatrix,type = "probabilities")
     if(is.null(CUT)) {

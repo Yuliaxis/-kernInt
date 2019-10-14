@@ -151,20 +151,29 @@ kCV.core <- function(H, kernel, method, K, ...) {
 #' @keywords internal
 kCV.MKL <- function(ARRAY, COEFF, KERNH, kernels, method, ...) {
   min.error <- Inf
+  if(class(COEFF) != "matrix") COEFF <- matrix(COEFF,ncol=length(COEFF),byrow=TRUE)
   nhyp <- length(KERNH)
-  ARRAY2 <- matrix(0,dim=c(dim(ARRAY)[1],dim(ARRAY)[2],nhyp))
-  for(k in 1:nhyp) {
-    j <- ceiling(k/nrow(KERNH))
-    ARRAY2[,,k] <- hyperkSelection(ARRAY[,,j],h=KERNH[[k]],kernel=kernels[j])
+  if(class(KERNH) =="matrix") {
+    ARRAY2 <- array(0,dim=c(dim(ARRAY)[1],dim(ARRAY)[2],nhyp))
+    for(k in 1:nhyp) {
+      j <- ceiling(k/nrow(KERNH))
+      ARRAY2[,,k] <- hyperkSelection(ARRAY[,,j],h=KERNH[[k]],kernel=kernels[j])
+    }
+    code <- rep(1:ncol(KERNH), each=nrow(KERNH))
+    indexes <- expand.grid(split(1:nhyp,code))
+  } else {
+    ARRAY2 <- ARRAY
+    indexes <- matrix(1:nhyp,nrow=1,ncol=nhyp)
+    print(indexes)
+    KERNH <- matrix(KERNH,ncol=length(KERNH),byrow=TRUE)
   }
-  indexes <- expand.grid(rep(1:nrow(KERNH),ncol(KERNH)))
-  m <- nrow(COEFF)
-  for(i in 1:m) {
+  d <- nrow(COEFF)
+  for(i in 1:d) {
     for(k in 1:nrow(indexes)) {
-      Kmatrix <- KInt(ARRAY2[,,indexes[k,]],coeff=COEFF[i,])
+      Kmatrix <- KInt(ARRAY2[,,as.numeric(indexes[k,])],coeff=COEFF[i,])
       if(method == "svc") {
         bh <- kCV.class(Kmatrix,...) ## calls svm classification
-      } else if(method == "svr") { ## smv calls regression
+      } else if(method == "svr") { ## smv  regression
         bh <- kCV.reg(Kmatrix,...)
       } else { ## calls one-class svm
         bh <- kCV.one(Kmatrix,...)
@@ -180,9 +189,10 @@ kCV.MKL <- function(ARRAY, COEFF, KERNH, kernels, method, ...) {
       }
     }
   }
-  ii <- matrix(c(ii,1:length(ii)),ncol=2)
-  best.h <- rep(0,m)
-  for(j in 1:m) best.h[j] <- KERNH[ii[j],j]
+
+  i <-  as.numeric(i - nrow(KERNH) * (as.numeric(names(i))-1))
+  best.h <- rep(0,ncol(KERNH))
+  for(j in 1:ncol(KERNH)) best.h[j] <- KERNH[i[j],j]
   best.hyp <- list(coeff=best.coeff,h=best.h,cost=best.cost,epsilon=best.e,cut=best.cut,nu=best.nu,error= min.error)
   return(best.hyp)
 }

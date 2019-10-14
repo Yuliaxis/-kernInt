@@ -29,3 +29,23 @@
 #' @format A data frame with 131 rows (patients) and 52 columns (week number)
 #' @source \url{https://ibdmdb.org/tunnel/products/HMP2/Metadata/hmp2_metadata.csv}
 "FcalWeek"
+
+#' Microbiota of 107 individuals
+#'
+#' @format A data frame with 1607 rows (patients) and 585 columns (species)
+#' @source \url{https://ibdmdb.org/tunnel/public/HMP2/WGS/1818/products}
+"allMGX"
+
+
+#' Longitudinal data (intestinal microbiota)
+#'
+#' @format A list containing: a matrix with the species abundances of 107 individuals with 4 visits each one,
+#' a vector with the number of individuals and visits, and a matrix with the distance among the visits (in weeks)
+#' @source \url{https://ibdmdb.org/tunnel/public/HMP2/WGS/1818/products}
+"longMGX"
+
+#' Longitudinal metadata (intestinal microbiota)
+#'
+#' @format A table with the sampling time, individual diagnosis, sex, age etc
+#' @source \url{https://ibdmdb.org/tunnel/public/HMP2/WGS/1818/products}
+"metaLongMGX"

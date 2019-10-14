@@ -20,6 +20,7 @@
 
 
 KInt <- function(data,coeff) {
+  data[which(is.na(data))] <- 0
   d <- aperm(data,c(3,1,2))
   if(hasArg(coeff)) {
     if(dim(d)[1] != length(coeff)) stop("Length of the coefficients vector different to the number of matrices")
