@@ -5,7 +5,7 @@
 \title{SVM classifier}
 \usage{
 classify(data, y, coeff, kernel, prob = FALSE, classimb = "no",
-  type = "ubOver", p = 0.8, k, C = 1, H = 0, CUT = NULL)
+  type = "ubOver", p = 0.8, k, C = 1, H = NULL, CUT = NULL)
 }
 \arguments{
 \item{data}{Input data: a matrix or data.frame with predictor variables. To perform MKL: a list of the *m* types of data to combine.}

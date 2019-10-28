@@ -13,6 +13,8 @@
 #' @param y Reponse variable (continuous)
 #' @param kernel "cRBF" for clrRBF, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights.
 #' "matrix" if a pre-calculated kernel matrix is given as input.
+#' @param coeff ONLY IN MKL CASE: A *t·m* matrix of the coefficients, where *m* are the number of different data types and *t* the number of
+#' different coefficient combinations to evaluate via k-CV.
 #' @param p Proportion of total data instances in the training set
 #' @param C A vector with the possible costs to evaluate via k-Cross-Val. If no argument is provided cross-validation is not performed.
 #' @param H Gamma hyperparameter
@@ -31,7 +33,7 @@
 #' @importFrom kernlab as.kernelMatrix kernelMatrix predict rbfdot SVindex
 #' @export
 
-regress <- function(data, y, kernel, p=0.8, C=1, H=0, E=0.1, k) {
+regress <- function(data, y, coeff,  kernel, p=0.8, C=1, H=NULL, E=0.1, k) {
 
   if(class(data) == "list") {
     m <- length(data)
@@ -45,36 +47,72 @@ regress <- function(data, y, kernel, p=0.8, C=1, H=0, E=0.1, k) {
   } else {
     stop("Wrong input data class.")
   }
-
   # 1. TR/TE
-  index <- finalTRTE(data,p)
+  if("time2" %in% kernel) {
+    print("Longitudinal")
+    index <- longTRTE(data,p)
+  } else {
+    index <- finalTRTE(data,p) ## data és una matriu en aquest cas. passar-ho a MKL.
+  }
   learn.indexes <- index$li
   test.indexes <- index$ti
+  print(test.indexes)
 
   # 2. Compute kernel matrix
-  Jmatrix <- kernelSelect(kernel,data,y)
 
-  trMatrix <- Jmatrix[learn.indexes,learn.indexes]
-  teMatrix <- Jmatrix[test.indexes,learn.indexes]
+  if(m>1) {
+    Jmatrix  <- seqEval(DATA=data, y=y, kernels=kernel,h=NULL) ## Sense especificar hiperparàmetre.
+    trMatrix <- Jmatrix[learn.indexes,learn.indexes,]
+    teMatrix <- Jmatrix[test.indexes,learn.indexes,]
+  } else {
+    print(dim(data))
+    print(length(y))
+    Jmatrix <- kernelSelect(kernel=kernel,data=data,y=y,h=NULL)
+    trMatrix <- Jmatrix[learn.indexes,learn.indexes]
+    teMatrix <- Jmatrix[test.indexes,learn.indexes]
+  }
+
+  print(trMatrix[1:10,1:10,])
 
   # 3. Do R x k-Cross Validation
   if(hasArg(k)) {
-    if(k<2) stop("k must be equal to or higher than 2")
-    bh <- kCV.core(H = H, method="svr", kernel=kernel,EPS = E, COST = C, K=trMatrix, Y=y[learn.indexes], k=k, R=k)
-    cost <- bh$cost
+    if(k<2) stop("k should be equal to or higher than 2")
+    if(m>1)  {
+      if(!hasArg(coeff)) coeff <- rep(1/m,m)
+      bh <- kCV.MKL(ARRAY=trMatrix, COEFF=coeff, KERNH=H, kernels=kernel, method="svr", COST = C,EPS = E,
+                     Y=y[learn.indexes], k=k,  R=1)
+      coeff <- bh$coeff ##indexs
+      print(coeff)
+
+    } else {
+      bh <- kCV.core(H = H, method="svr", kernel=kernel,EPS = E, COST = C, K=trMatrix, Y=y[learn.indexes], k=k, R=1)
+    }
     eps <- bh$epsilon
+    cost <- bh$cost
     H <- bh$h
+
   } else {
     if(length(C)>1)  paste("C > 1 - Only the first element will be used")
     if(length(E)>1) paste("E > 1 - Only the first element will be used")
-    if(length(H)>1) paste("H > 1 - Only the first element will be used")
+    # if(length(H)>1) paste("H > 1 - Only the first element will be used")
     cost <- C[1]
     eps <- E[1]
-    H <- H[1]
+    # H <- H[1]
   }
 
-  trMatrix <- hyperkSelection(trMatrix,h=H,kernel=kernel)
-  teMatrix <- hyperkSelection(teMatrix,h=H,kernel=kernel)
+  if(m>1) {
+    for(j in 1:m) trMatrix[,,j] <- hyperkSelection(K=trMatrix[,,j], h=H[j],  kernel=kernel[j])
+    for(j in 1:m) teMatrix[,,j] <- hyperkSelection(K=teMatrix[,,j], h=H[j],  kernel=kernel[j])
+    print(trMatrix[1:10,1:10,])
+
+    trMatrix <- KInt(data=trMatrix,coeff=coeff)
+    teMatrix <- KInt(data=teMatrix,coeff=coeff)
+  }  else {
+    trMatrix <- hyperkSelection(trMatrix,h=H,kernel=kernel)
+    teMatrix <- hyperkSelection(teMatrix,h=H,kernel=kernel)
+  }
+  print(trMatrix[1:10,1:10])
+
 
   model <- ksvm(trMatrix, y[learn.indexes],type="eps-svr", kernel="matrix", C=cost, epsilon = eps)
 
@@ -82,7 +120,8 @@ regress <- function(data, y, kernel, p=0.8, C=1, H=0, E=0.1, k) {
   teMatrix <- teMatrix[,SVindex(model),drop=FALSE]
   teMatrix <- as.kernelMatrix(teMatrix)
   pred <- kernlab::predict(model,teMatrix)
-
+  print(pred)
+  print(y[test.indexes])
   return( error.norm(y[test.indexes],pred))
 }
 

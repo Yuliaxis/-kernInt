@@ -4,7 +4,7 @@
 \alias{clrRBF}
 \title{clr transf + RBF kernel}
 \usage{
-clrRBF(data, h)
+clrRBF(data, h = NULL)
 }
 \arguments{
 \item{data}{A matrix or data.frame containing only positive values.}

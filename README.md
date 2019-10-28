@@ -193,13 +193,11 @@ If an argument for `y` is provided, `outliers()` functions as an one-class SVM. 
 
 MKL (Multiple Kernel Learning) is available to both `classify()` and `regress()`. All features of these two functions ara available when performing MKL. 
 
-To do MKL, the `data` argument must be a list of length > 1 or a tridimensional array. Each element of the list should be a data.frame or matrix:
+To do MKL, the `data` argument must be a list of length > 1 or a tridimensional array. Each element of the list should be a data.frame or matrix. A vector of kernel names can be passed to the `kernel` argument. That way a different kernel will be applied to each data type: 
 
-`falta`
-
-A vector of kernel names can be passed to the `kernel` argument. That way a different kernel will be applied to each data type: 
-
-`falta`
+`diag <- as.numeric(metaLongMGX[,8])` 
+`diag[diag == 3] <- 1 ` 
+`classify(data=longMGX, y, coeff, kernel, prob = FALSE, classimb = "no",type = "ubOver", p = 0.8, k, C = 1, H = 0, CUT = NULL)`
 
 The `coeff` argument is for the weight of each data type in the kernel combination. When absent, the mean across all kernel matrices is performed.
 

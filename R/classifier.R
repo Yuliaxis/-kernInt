@@ -58,12 +58,11 @@
 
 
 
-classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="ubOver", p=0.8, k, C=1, H=0, CUT=NULL) {
+classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="ubOver", p=0.8, k, C=1, H=NULL, CUT=NULL) {
 
   # y class
   diagn <- as.factor(y)
   levels(diagn) <- c("1","2")
-
   # data class
   if(class(data) == "list") {
     m <- length(data)
@@ -77,12 +76,15 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
   } else {
     stop("Wrong input data class.")
   }
-
   # 1. TR/TE
-  index <- finalTRTE(data,p) ## data és una matriu en aquest cas. passar-ho a MKL.
+  if("time2" %in% kernel) {
+    print("Longitudinal")
+    index <- longTRTE(data,p)
+  } else {
+    index <- finalTRTE(data,p) ## data és una matriu en aquest cas. passar-ho a MKL.
+  }
   learn.indexes <- index$li
   test.indexes <- index$ti
-
   if(classimb == "weights") {
     wei <- c("1"=as.numeric(summary(diagn[learn.indexes])[2]),"2"=as.numeric(summary(diagn[learn.indexes])[1]))
   } else {
@@ -100,11 +102,13 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
     # 2. Compute kernel matrix
 
   if(m>1) {
-    Jmatrix  <- seqEval(DATA=data, y=diagn, kernels=kernel) ## Sense especificar hiperparàmetre.
+    Jmatrix  <- seqEval(DATA=data, y=diagn, kernels=kernel,h=NULL) ## Sense especificar hiperparàmetre.
     trMatrix <- Jmatrix[learn.indexes,learn.indexes,]
     teMatrix <- Jmatrix[test.indexes,learn.indexes,]
   } else {
-    Jmatrix <- kernelSelect(kernel,data,y)
+    print(dim(data))
+    print(length(diagn))
+    Jmatrix <- kernelSelect(kernel=kernel,data=data,y=diagn,h=NULL)
     trMatrix <- Jmatrix[learn.indexes,learn.indexes]
     teMatrix <- Jmatrix[test.indexes,learn.indexes]
   }
@@ -115,22 +119,24 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
     if(k<2) stop("k should be equal to or higher than 2")
     if(m>1)  {
       if(!hasArg(coeff)) coeff <- rep(1/m,m)
-      bh <- kCV.MKL(ARRAY=trMatrix, COEFF=coeff, KERNH=H, kernels=kernel, method="svc",COST = C,
-                    CUT=CUT, Y=diagn[learn.indexes], k=k,  prob=prob, R=k,classimb=wei)
+      bh <- kCV.MKL(ARRAY=trMatrix, COEFF=coeff, KERNH=H, kernels=kernel, method="svc", COST = C,
+                    CUT=CUT, Y=diagn[learn.indexes], k=k,  prob=prob, R=1,classimb=wei)
       coeff <- bh$coeff ##indexs
+      print(coeff)
+
     } else {
     bh <- kCV.core(method="svc",COST = C, H = H, kernel=kernel, CUT=CUT, K=trMatrix, prob=prob,
-                   Y=diagn[learn.indexes], k=k, R=k,classimb=wei)
+                   Y=diagn[learn.indexes], k=k, R=1,classimb=wei)
     }
-    cut <- bh$cut
+    CUT <- bh$cut
     cost <- bh$cost
     H <- bh$h
 
   } else {
     if(length(C)>1) paste("C > 1 and no k provided - Only the first element will be used")
     cost <- C[1]
-    if(length(H)>1) paste("H > 1 and no k provided- Only the first element will be used")
-    H <- H[1]
+    # if(length(H)>1) paste("H > 1 and no k provided- Only the first element will be used")
+    # H <- H[1]
     if(!is.null(CUT) && length(CUT)>1) {
       paste("CUT > 1 and no k provided - Only the first element will be used")
       CUT <- CUT[1]
@@ -138,8 +144,8 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
   }
 
   if(m>1) {
-    for(j in 1:m) trMatrix[,,j] <- hyperkSelection(K=trMatrix[,,j], h=H,  kernel=kernel[j])
-    for(j in 1:m) teMatrix[,,j] <- hyperkSelection(K=teMatrix[,,j], h=H,  kernel=kernel[j])
+    for(j in 1:m) trMatrix[,,j] <- hyperkSelection(K=trMatrix[,,j], h=H[j],  kernel=kernel[j])
+    for(j in 1:m) teMatrix[,,j] <- hyperkSelection(K=teMatrix[,,j], h=H[j],  kernel=kernel[j])
     trMatrix <- KInt(data=trMatrix,coeff=coeff)
     teMatrix <- KInt(data=teMatrix,coeff=coeff)
   }  else {
@@ -148,7 +154,13 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
   }
 
   # 4. Model
-
+  print(H)
+  print(dim(trMatrix))
+  print(trMatrix[1:10,1:10])
+  print(length(diagn[learn.indexes]))
+  print(prob)
+  print(cost)
+  print(wei)
   model <- ksvm(trMatrix, diagn[learn.indexes], kernel="matrix", type="C-svc", prob.model = prob, C=cost, class.weights=wei)
 
   # 5. Prediction
@@ -165,7 +177,9 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
     pred <- (pred[,2] < cut)
     pred[pred] <- 1
     pred[pred==0] <- 2
-    }   else    { pred <- kernlab::predict(model,teMatrix) }
+  }   else    {
+      pred <- kernlab::predict(model,teMatrix)
+    }
    pred <- as.factor(pred)
    levels(pred) <- c("1","2")
    print(pred)

@@ -8,7 +8,7 @@ kCV.class <- function(CUT, COST, K, Yresp, k, R, prob, classimb=FALSE) {
   min.error <- Inf
   if(is.null(CUT)) cut <- 0.5
 
-  for (c in COST){
+  for (c in COST) {
 
     outer.error <- vector(mode="numeric",length=R)
     for (o in 1:R) {
@@ -123,7 +123,10 @@ kCV.reg <- function(EPS, COST, K, Yresp, k, R) {
 #' @keywords internal
 kCV.core <- function(H, kernel, method, K, ...) {
   min.error <- Inf
+  if(is.null(H)) H <- 0
   for (h in H) {
+    if(h==0) h <- NULL ## molt lleig això
+    print(h)
     Kmatrix <- hyperkSelection(K=K,h=h,kernel=kernel)
     # Y <- Yresp
     if(method == "svc") {
@@ -142,8 +145,11 @@ kCV.core <- function(H, kernel, method, K, ...) {
       min.error <- bh$error
     }
   }
+  if(is.null(h)) {  best.hyp <- data.frame(cost=best.cost,epsilon=best.e,cut=best.cut,nu=best.nu,error= min.error)
+  } else{
+    best.hyp <- data.frame(h=best.h,cost=best.cost,epsilon=best.e,cut=best.cut,nu=best.nu,error= min.error)
+  }
 
-  best.hyp <- data.frame(h=best.h,cost=best.cost,epsilon=best.e,cut=best.cut,nu=best.nu,error= min.error)
   return(best.hyp)
 }
 
@@ -152,7 +158,7 @@ kCV.core <- function(H, kernel, method, K, ...) {
 kCV.MKL <- function(ARRAY, COEFF, KERNH, kernels, method, ...) {
   min.error <- Inf
   if(class(COEFF) != "matrix") COEFF <- matrix(COEFF,ncol=length(COEFF),byrow=TRUE)
-  nhyp <- length(KERNH)
+  nhyp <- length(KERNH) ## com canviar-ho a llista?
   if(class(KERNH) =="matrix") {
     ARRAY2 <- array(0,dim=c(dim(ARRAY)[1],dim(ARRAY)[2],nhyp))
     for(k in 1:nhyp) {
@@ -164,12 +170,13 @@ kCV.MKL <- function(ARRAY, COEFF, KERNH, kernels, method, ...) {
   } else {
     ARRAY2 <- ARRAY
     indexes <- matrix(1:nhyp,nrow=1,ncol=nhyp)
-    print(indexes)
-    KERNH <- matrix(KERNH,ncol=length(KERNH),byrow=TRUE)
+    colnames(indexes) <- 1:nhyp
+    if(!is.null(KERNH)) KERNH <- matrix(KERNH,ncol=length(KERNH),byrow=TRUE)
   }
   d <- nrow(COEFF)
   for(i in 1:d) {
     for(k in 1:nrow(indexes)) {
+      print(k)
       Kmatrix <- KInt(ARRAY2[,,as.numeric(indexes[k,])],coeff=COEFF[i,])
       if(method == "svc") {
         bh <- kCV.class(Kmatrix,...) ## calls svm classification
@@ -189,10 +196,13 @@ kCV.MKL <- function(ARRAY, COEFF, KERNH, kernels, method, ...) {
       }
     }
   }
-
-  i <-  as.numeric(i - nrow(KERNH) * (as.numeric(names(i))-1))
-  best.h <- rep(0,ncol(KERNH))
-  for(j in 1:ncol(KERNH)) best.h[j] <- KERNH[i[j],j]
+  if(!is.null(KERNH)) {
+  ii <-  as.numeric(ii - nrow(KERNH) * as.numeric((1:ncol(KERNH))-1))
+  best.h <- c()
+  for(t in 1:ncol(KERNH))   best.h <- c(best.h, KERNH[ii[t],t])
+  } else {
+    best.h <- NULL
+  }
   best.hyp <- list(coeff=best.coeff,h=best.h,cost=best.cost,epsilon=best.e,cut=best.cut,nu=best.nu,error= min.error)
   return(best.hyp)
 }

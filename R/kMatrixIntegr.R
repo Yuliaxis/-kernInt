@@ -52,8 +52,8 @@ KInt <- function(data,coeff) {
 #' @export
 #'
 
-fuseData <- function(DATA,coeff,kernels,y,h) {
-  Kmatrix <- seqEval(DATA,kernels,y,h)
+fuseData <- function(DATA,coeff,kernels,y,h=NULL) {
+  Kmatrix <- seqEval(DATA=DATA,kernels=kernels,y=y,h=h)
   m <- length(DATA)
 
   if(hasArg(coeff)) {

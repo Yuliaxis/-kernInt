@@ -4,7 +4,7 @@
 \alias{TimeK}
 \title{Time Kernel Matrix}
 \usage{
-TimeK(data, h)
+TimeK(data, h = NULL)
 }
 \arguments{
 \item{data}{A n·d data.frame or matrix with n individuals and d ordered visits, stating if the individual came to the

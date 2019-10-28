@@ -4,12 +4,16 @@
 \alias{regress}
 \title{SVM regression}
 \usage{
-regress(data, y, kernel, p = 0.8, C = 1, H = 0, E = 0.1, k)
+regress(data, y, coeff, kernel, p = 0.8, C = 1, H = NULL, E = 0.1,
+  k)
 }
 \arguments{
 \item{data}{Input data}
 
 \item{y}{Reponse variable (continuous)}
+
+\item{coeff}{ONLY IN MKL CASE: A *t·m* matrix of the coefficients, where *m* are the number of different data types and *t* the number of
+different coefficient combinations to evaluate via k-CV.}
 
 \item{kernel}{"cRBF" for clrRBF, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights.
 "matrix" if a pre-calculated kernel matrix is given as input.}

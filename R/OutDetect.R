@@ -35,7 +35,7 @@
 
 
 
-outliers <- function(data,y,kernel,nu,p=0.8,k,H=0) {
+outliers <- function(data,y,kernel,nu,p=0.8,k,H=NULL) {
 
   if(hasArg(y)) {
     y <- as.factor(y)
@@ -55,7 +55,7 @@ outliers <- function(data,y,kernel,nu,p=0.8,k,H=0) {
     stop("Wrong input data class.")
   }
 
-  Jmatrix <- kernelSelect(kernel,data,y)
+  Jmatrix <- kernelSelect(kernel,data,y,h=NULL)
 
   if(hasArg(y)){
     index <- finalTRTE(data,p) ## data és una matriu en aquest cas. passar-ho a MKL.

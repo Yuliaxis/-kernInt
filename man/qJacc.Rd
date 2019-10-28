@@ -4,7 +4,7 @@
 \alias{qJacc}
 \title{Quantitative Jaccard}
 \usage{
-qJacc(data, h)
+qJacc(data, h = NULL)
 }
 \arguments{
 \item{data}{A matrix or data.frame containing nonnegative values.}

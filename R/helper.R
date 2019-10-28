@@ -13,7 +13,6 @@ expand.grid.mod <- function(x, rep) { # x is a vector
 }
 
 
-
 #Training indexes
 #' @keywords internal
 trainIndx <- function(n, ptrain = 0.8) {
@@ -26,10 +25,26 @@ trainIndx <- function(n, ptrain = 0.8) {
 #' @keywords internal
 ids <- function(x) UseMethod("ids",x)
 
-ids.list <- function(x) return(as.factor(rownames(x[[1]])))
-ids.array <- function(x) return(as.factor(dimnames(x)[[1]]))
-ids.data.frame <- function(x) return( as.factor(rownames(x)))
-ids.matrix <- function(x) return(as.factor(rownames(x)))
+ids.list <- function(x) {
+  is <- rownames(x[[1]])
+  if(is.null(is)) is <- 1:nrow(x[[1]])
+  return(as.factor(is))
+}
+ids.array <- function(x) {
+  is <- dimnames(x)[[1]]
+  if(is.null(is)) is <- 1:nrow(x)
+  return(as.factor(is))
+}
+ids.data.frame <- function(x) {
+  is <-  rownames(x)
+  if(is.null(is)) is <- 1:nrow(x)
+  return(as.factor(is))
+}
+ids.matrix <- function(x) {
+  is <- rownames(x)
+  if(is.null(is))  is <- 1:nrow(x)
+  return(as.factor(is))
+}
 
 #Final tr and test indices
 #' @keywords internal
@@ -56,6 +71,20 @@ finalTRTE  <- function(data,p) {
     names(test.indexes) <- NULL
     test.indexes <- sort(test.indexes)
   }
+  return(list(li=learn.indexes,ti=test.indexes))
+}
+
+#' @keywords internal
+longTRTE  <- function(data,p) { ## ara mateix agafa una sessió a l'atzar. es pot fer que sempre agafi la mateixa amb una petita modificació
+  # period <- data[[1]]
+  # individuals <- data$IndividxVisits[1]
+  # total <- period*individuals
+  # test.indexes <- seq(from=period,to=total,by=period)
+  id <-ids(data)
+  total <- length(id)
+  id <- as.numeric(summary(id))
+  test.indexes <- sapply(id,function(x)sample(x,1))
+  learn.indexes <- (1:total)[-test.indexes]
   return(list(li=learn.indexes,ti=test.indexes))
 }
 
@@ -111,9 +140,9 @@ dataSampl.list <- function(data, diagn, nlearn, N, learn.indexes,test.indexes, k
 
     if(type == "ubSMOTE") {
       SobrDadesTr <- list()
-      for(i in 1:m) SobrDadesTr[[i]] <- ubBalance(dades[[i]][1:nlearn,], diagn[1:nlearn], type=type, positive=2)
+      for(i in 1:m) SobrDadesTr[[i]] <- ubBalance(data[[i]][1:nlearn,], diagn[1:nlearn], type=type, positive=2)
     } else {
-      dadespr <- dades[[1]]
+      dadespr <- data[[1]]
       rownames(dadespr) <- 1:N
       if(type == "ubOver")  SobrDadesTr <- ubBalance(dadespr[1:nlearn,], diagn[1:nlearn], type=type, positive=2, k=0)
       if(type == "ubUnder")  SobrDadesTr <- ubBalance(dadespr[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
@@ -161,18 +190,22 @@ dataSampl.default <- function(data, diagn, nlearn, N, learn.indexes,test.indexes
 #' @keywords internal
 
 hyperkSelection <- function(K, h, kernel) {
+  if (is.null(h)) {
+    return(K)
+  }
+  if(length(h)>1) {
+    paste("More kernel hyperparameters than kernel functions - Only the first element will be used")
+    h <- h[1]
+  }
   if(kernel == "qJac" | kernel == "wqJac") {
-    if (h == 0) {
-      Kmatrix <- K
-    } else { Kmatrix <- exp(h*K)/exp(h) #Standardized Kernel Matrix. Otherwise exp(g*K)
-    }
+    Kmatrix <- exp(h*K)/exp(h) #Standardized Kernel Matrix. Otherwise exp(g*K)
   } else if(kernel == "cRBF" | kernel == "time" | kernel == "time2") {
     Kmatrix <- exp(-h*K)
   } else if(kernel == "cov") {
     Kmatrix <- K
     Kmatrix[Kmatrix!=0] <- h
     diag(Kmatrix) <- 1
-  } else if(kernel == "matrix") {
+  } else if(kernel == "matrix" | kernel == "linear") {
     Kmatrix <- K
   } else {
     stop("Kernel not available.")

@@ -13,7 +13,7 @@
 #' TimeK(data=DATA)
 #' @export
 
-TimeK <- function(data,h) {
+TimeK <- function(data,h=NULL) {
   totaltime <- as.numeric(colnames(data))
   totalrows <- rowSums(data)
   data[!data] <- NA
@@ -32,13 +32,13 @@ TimeK <- function(data,h) {
   K <- matrix(0,nrow=sum(totalrows),ncol=sum(totalrows))
   colnames(K) <- visits
   rownames(K) <- colnames(K)
-  if(hasArg(h)) {
+  if (!is.null(h)) {
     for(i in 1:length(values)) K[index[i,1],index[i,2]] <- exp(-h*values[i])
   } else {
       for(i in 1:length(values)) K[index[i,1],index[i,2]] <- abs(values[i])
     }
   K <- K + t(K)
-  if(hasArg(h))  { diag(K) <- 1
+  if(!is.null(h))  { diag(K) <- 1
   } else {
     K[K == 0] <- NA
     diag(K) <- 0 }
@@ -83,5 +83,4 @@ minSep <- function(table,n) {
   }
   names(INDEX) <-  rownames(table)
   return(INDEX)
-
 }

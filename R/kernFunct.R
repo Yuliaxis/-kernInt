@@ -13,7 +13,7 @@
 #' @export
 
 
-qJacc <- function(data,h) {
+qJacc <- function(data,h=NULL) {
 
   data <- as.matrix(data)
   n <- nrow(data)
@@ -29,7 +29,7 @@ qJacc <- function(data,h) {
   tK <- t(K)
   K <- tK + K # Upper triangular matrix to symmetric matrix
   diag(K) <- 1
-  if(hasArg(h))  K <- exp(h*K)/exp(h)
+  if(!is.null(h) && h != 0 )  K <- exp(h*K)/exp(h)
   return(K)
 }
 
@@ -55,7 +55,7 @@ qJacc <- function(data,h) {
 #' @export
 
 
-wqJacc <- function(data, w, y, h) {
+wqJacc <- function(data, w, y, h=NULL) {
   if(!hasArg(w)) {
     if(hasArg(y)) {
       w <- rfweight(x=data,y=y,plot=FALSE)
@@ -71,7 +71,7 @@ wqJacc <- function(data, w, y, h) {
   return(qJacc(data=weidata,h=h))
 }
 
-#' Aitchison distance kernel
+# Aitchison distance kernel
 #'
 #' Aitchison distance kernel
 #'
@@ -108,20 +108,21 @@ aitch.dist <- function(data) {
 #' @export
 #'
 
-clrRBF <- function(data,h) {
+clrRBF <- function(data,h=NULL) {
   K <- aitch.dist(data)
-  if(hasArg(h)) K <- exp(-h*(K^2)) #RBF
+  if(!is.null(h) && h != 0 ) K <- exp(-h*(K^2)) #RBF
   return(K)
 }
 
 # Covariance matrix
 #' @keywords internal
-covmat <- function(ind, visits, h) {
+covmat <- function(ind, visits, h=0.5) {
+  if(is.null(h) || h == 0 ) h <- 0.5
+  # if(is.null(h) | h == 0 ) stop ("Wrong hyperparameter value")
   totalrows <- visits*ind
   K <- matrix(0,nrow=totalrows,ncol=totalrows)
   rownames(K) <- 1:totalrows
   colnames(K) <- rownames(K)
-  if(!hasArg(h)) h <- 0.5
   for(i in 1:ind) {
     index <- ((i-1)*visits+1):(i*visits)
     K[index,index] <- h
@@ -130,47 +131,65 @@ covmat <- function(ind, visits, h) {
   return(K)
 }
 
+# Linear kernel (via crossprod)
+#' @keywords internal
+Linear <- function(data) {
+  Kmatrix <- crossprod(t(data))
+  D <- diag(1/sqrt(diag(Kmatrix)))
+  Kmatrix <- D %*% Kmatrix %*% D
+  return(Kmatrix)
+}
+
 
 #Kernel selection
 #' @keywords internal
-kernelSelect <- function(kernel,data,y,h) { #h és un hiperparàmetre
+kernelSelect <- function(kernel,data,y,h=NULL) { #h és un hiperparàmetre
   if(kernel == "qJac") {
     cat("quantJaccard kernel\n")
     return(qJacc(data,h))
   } else if(kernel == "wqJac") {
     cat("quantJaccard kernel + weights \n")
-    return(wqJacc(data,y=y,h))
+    print(y)
+    return(wqJacc(data=data,y=y,h=h))
   }  else if(kernel == "cRBF") {
     cat("clr + RBF \n")
     return(aitch.dist(data))
   } else if(kernel == "time") {
     cat("Time matrix \n")
     return(TimeK(data,h))
-  }else if(kernel == "cov") {
+  } else if(kernel == "cov") {
     cat("Covariance matrix \n")
     return(covmat(ind=data[1],visits=data[2],h))
   } else if(kernel == "matrix" | kernel == "time2") {
     cat("Pre-computed kernel matrix given \n")
     return(as.matrix(data))
-  }   else {
-    cat("standard RBF \n")
-    # Jmatrix <-  kernelMatrix(rbfdot(sigma = G),data)
-    stop("Kernel not available.") ##temporalment
+  } else if (kernel=="linear") {
+    cat("Linear \n")
+    return(Linear(data))
+    } else {
 
+    stop("Kernel not available.") ##temporalment
   }
 }
 
 
 # Kernel computing for different types of data
 #' @keywords internal
-seqEval <- function(DATA,kernels,y,h) {
+
+seqEval <- function(DATA,kernels,y,h) UseMethod("seqEval",DATA)
+
+seqEval.array <- function(DATA,kernels,y,h=NULL) {
+  m <- dim(DATA)[3]
+  n <- nrow(DATA[,,1])
+  K <- array(0,dim=c(n,n,m))
+  for(i in 1:m) K[,,i] <- kernelSelect(data = DATA[,,i],  kernel = kernels[i],h=h[i])
+  return(K)
+}
+seqEval.list <- function(DATA,kernels,y,h=NULL) {
   m <- length(DATA)
   n <- nrow(DATA[[1]])
   K <- array(0,dim=c(n,n,m))
-  for(i in 1:m) {
-    K[,,i] <- kernelSelect(data = DATA[[i]],  kernel = kernels[i],h)
-    print( K[,,i])
-  }
+  for(i in 1:m) K[,,i] <- kernelSelect(data = DATA[[i]],  kernel = kernels[i],h=h[i])
   return(K)
 }
 
