@@ -193,19 +193,21 @@ If an argument for `y` is provided, `outliers()` functions as an one-class SVM. 
 
 MKL (Multiple Kernel Learning) is available to both `classify()` and `regress()`. All features of these two functions ara available when performing MKL. 
 
-To do MKL, the `data` argument must be a list of length > 1 or a tridimensional array. Each element of the list should be a data.frame or matrix. A vector of kernel names can be passed to the `kernel` argument. That way a different kernel will be applied to each data type: 
+To do MKL, the `data` argument must be a list of length > 1 or a tridimensional array. Each element of the list should be a data.frame or matrix. A vector of kernel names can be passed to the `kernel` argument. That way a different kernel will be applied to each data type. For example, if we have a list with two pre-computed kernel matrices.
 
-`diag <- as.numeric(metaLongMGX[,8])` 
-`diag[diag == 3] <- 1 ` 
-`classify(data=longMGX, y, coeff, kernel, prob = FALSE, classimb = "no",type = "ubOver", p = 0.8, k, C = 1, H = 0, CUT = NULL)`
+`regress(data=grKern[c(1,3)], y=growth[,2], kernel=c("matrix","matrix"))` 
 
 The `coeff` argument is for the weight of each data type in the kernel combination. When absent, the mean across all kernel matrices is performed.
 
-`falta`
+`regress(data=grKern[c(1,3)], y=growth[,2], coeff=c(0.6,0.4), kernel=c("matrix","matrix"),C=0.1)` 
 
-Kernel(s)' generic hyperparameter `H` can be a number (same hyperparameter for all data types), a vector (different hyperparameter for each data type 
-and not cross-validation) or a matrix (different set of hyperparametes for each kernel to chose through cross-validation).
+The use of additional parameters as C, E, p... remains the same. Kernel(s)' generic hyperparameter `H` is null by default. In the MKL usage, it must be a list so each element is the hyperparameter applied of each kernel function:
 
+`classify(data=grKern[c(2,4)],y=growth[,1],kernel=c("linear","cov"), H=list(a=NULL,b=0.25))`
+
+In the case of k-Cross-Validation:
+
+`classify(data=grKern[c(2,4)],y=growth[,1],kernel=c("linear","cov"), H=list(a=NULL,b=c(0.25,0.5,0.75)),k=5)`
 
 
 ## Data fusion
@@ -225,3 +227,9 @@ We can use different kernel functions for each type of data; for example, Ruzick
 The former command consider the two sources equally important. If not, we can state the weights:
 
 `fuseData(DATA=d,kernel=c("qJac","cRBF"),coeff=c(0.9,0.1))`
+
+## Longitudinal
+
+Longitudinal data is detected when the `kernel` parameter has `time` among its arguments. We have a track of several individuals at different points of time. We aim to predict, for each individual, the target value in a certain point of time. The current approach for both `classify` and `regress` is based in MKL, anb it allows to perform MKL simultaneously:
+
+`regress(data=grKern[c(1,3:5)], y=growth[,2], coeff=c(0.33,0.33,0.17,0.17), kernel=c("matrix","matrix","cov","time"))`

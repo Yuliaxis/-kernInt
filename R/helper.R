@@ -82,8 +82,10 @@ longTRTE  <- function(data,p) { ## ara mateix agafa una sessió a l'atzar. es po
   # test.indexes <- seq(from=period,to=total,by=period)
   id <-ids(data)
   total <- length(id)
-  id <- as.numeric(summary(id))
-  test.indexes <- sapply(id,function(x)sample(x,1))
+  id <- as.numeric(summary(id,maxsum=length(id)))
+  help1 <- cumsum(id)-id[1]
+  spl <- sapply(id,function(x)sample(x,1))
+  test.indexes <- help1 + spl
   learn.indexes <- (1:total)[-test.indexes]
   return(list(li=learn.indexes,ti=test.indexes))
 }
@@ -190,7 +192,7 @@ dataSampl.default <- function(data, diagn, nlearn, N, learn.indexes,test.indexes
 #' @keywords internal
 
 hyperkSelection <- function(K, h, kernel) {
-  if (is.null(h)) {
+  if (is.null(h) || h==0) {
     return(K)
   }
   if(length(h)>1) {
@@ -199,8 +201,9 @@ hyperkSelection <- function(K, h, kernel) {
   }
   if(kernel == "qJac" | kernel == "wqJac") {
     Kmatrix <- exp(h*K)/exp(h) #Standardized Kernel Matrix. Otherwise exp(g*K)
-  } else if(kernel == "cRBF" | kernel == "time" | kernel == "time2") {
+  } else if(kernel == "cRBF" | kernel == "RBF" | kernel == "time" | kernel == "time2") {
     Kmatrix <- exp(-h*K)
+    Kmatrix[is.na(Kmatrix)] <- 0
   } else if(kernel == "cov") {
     Kmatrix <- K
     Kmatrix[Kmatrix!=0] <- h

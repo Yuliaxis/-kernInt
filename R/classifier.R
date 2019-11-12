@@ -27,7 +27,7 @@
 #' @param kernel "cRBF" for clrRBF, "qJac" for quantitative Jaccard,  "wqJac" for quantitative Jaccard with weights.
 #' "matrix" if a pre-calculated kernel matrix is given as input. To perform MKL: Vector of *m* kernels to apply to each data type.
 #' @param coeff ONLY IN MKL CASE: A *t·m* matrix of the coefficients, where *m* are the number of different data types and *t* the number of
-#' different coefficient combinations to evaluate via k-CV.
+#' different coefficient combinations to evaluate via k-CV. If absent, the same weight is given to all data sources.
 #' @param prob if TRUE class probabilities (soft-classifier) are computed instead of a True-or-false assignation (hard-classifier)
 #' @param classimb "weights" to introduce class weights in the SVM algorithm and "data" to oversampling. If other arguments are provided nothing is done.
 #' @param type If classimb = "data", the procedure to data oversampling or undersampling ("ubOver","ubUnder" or "ubSMOTE")
@@ -35,8 +35,8 @@
 #' @param k The k for the k-Cross Validation. Minimum k = 2. If no argument is provided cross-validation is not performed.
 #' @param C The cost. A vector with the possible costs (SVM hyperparameter) to evaluate via k-Cross-Val can be entered too.
 #' @param H Gamma hyperparameter. A vector with the possible values to chose the best one via k-Cross-Val can be entered.
-#' For the MKL, a matrix *n·m*  with the possible hyperparameters can be entered, being' *m* is the number of different data types,
-#' and *n* the number of different hyperparameters.
+#' For the MKL, a list with *m* entries can be entered, being' *m* is the number of different data types. Each element on the list
+#' must be a number or, if k-Cross-Validation is needed, a vector with the hyperparameters to evaluate for each data type.
 #' @param CUT Cut-off if prob = TRUE. If CUT is a vector, the best cut-off can be obtained via cross-validation.
 #' @return Confusion matrix or, if prob = TRUE and not cutoff is set, a data.frame with the class probability and the actual class.
 #' @examples
@@ -77,7 +77,7 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
     stop("Wrong input data class.")
   }
   # 1. TR/TE
-  if("time2" %in% kernel) {
+  if("time2" %in% kernel || "time" %in% kernel ) {
     print("Longitudinal")
     index <- longTRTE(data,p)
   } else {
@@ -90,7 +90,7 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
   } else {
     wei <- NULL
   }
-
+print(test.indexes)
   if(classimb=="data")  {
     s <- sampl(data=data,diagn=diagn,learn.indexes=learn.indexes,test.indexes=test.indexes,kernel=kernel,type=type)
     data <- s$data
@@ -106,8 +106,6 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
     trMatrix <- Jmatrix[learn.indexes,learn.indexes,]
     teMatrix <- Jmatrix[test.indexes,learn.indexes,]
   } else {
-    print(dim(data))
-    print(length(diagn))
     Jmatrix <- kernelSelect(kernel=kernel,data=data,y=diagn,h=NULL)
     trMatrix <- Jmatrix[learn.indexes,learn.indexes]
     teMatrix <- Jmatrix[test.indexes,learn.indexes]
@@ -141,6 +139,8 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
       paste("CUT > 1 and no k provided - Only the first element will be used")
       CUT <- CUT[1]
     }
+    if(!is.null(H)) H <- kernHelp(H)$hyp
+
   }
 
   if(m>1) {

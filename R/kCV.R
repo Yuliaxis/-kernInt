@@ -153,27 +153,41 @@ kCV.core <- function(H, kernel, method, K, ...) {
   return(best.hyp)
 }
 
+#' @keywords internal
+kernHelp <- function(x) {
+  nhxh <- sapply(x,length) # Nombre d'hiperparàmetres per tipus de dada
+  nulls <- which(nhxh==0)
+  nhxh[nulls] <- 1
+  x[nulls] <- 0
+  return(list(hyp=unlist(x),number=nhxh))
+}
+
 ## kCV procedure if MKL is being performed
 #' @keywords internal
 kCV.MKL <- function(ARRAY, COEFF, KERNH, kernels, method, ...) {
   min.error <- Inf
   if(class(COEFF) != "matrix") COEFF <- matrix(COEFF,ncol=length(COEFF),byrow=TRUE)
-  nhyp <- length(KERNH) ## com canviar-ho a llista?
-  if(class(KERNH) =="matrix") {
-    ARRAY2 <- array(0,dim=c(dim(ARRAY)[1],dim(ARRAY)[2],nhyp))
-    for(k in 1:nhyp) {
-      j <- ceiling(k/nrow(KERNH))
-      ARRAY2[,,k] <- hyperkSelection(ARRAY[,,j],h=KERNH[[k]],kernel=kernels[j])
-    }
-    code <- rep(1:ncol(KERNH), each=nrow(KERNH))
-    indexes <- expand.grid(split(1:nhyp,code))
-  } else {
-    ARRAY2 <- ARRAY
-    indexes <- matrix(1:nhyp,nrow=1,ncol=nhyp)
-    colnames(indexes) <- 1:nhyp
-    if(!is.null(KERNH)) KERNH <- matrix(KERNH,ncol=length(KERNH),byrow=TRUE)
-  }
   d <- nrow(COEFF)
+  d2 <- ncol(COEFF)
+
+  if(is.null(KERNH))  KERNH <- rep(0,d2)
+
+  hp <- kernHelp(KERNH)
+  unliH <- hp$hyp
+  nhxh<- hp$number
+  nhyp <- sum(nhxh) # Nombre total d'hiperparàmetres
+  chlp <- cumsum(nhxh)
+  ARRAY2 <- array(0,dim=c(dim(ARRAY)[1],dim(ARRAY)[2],nhyp))
+  for(k in 1:nhyp) {
+    j <- as.numeric(which(k <= chlp)[1])
+    print(k)
+    print(j)
+    ARRAY2[,,k] <- hyperkSelection(ARRAY[,,j],h=unliH[k],kernel=kernels[j])
+  }
+  code <- rep(1:d2, nhxh)
+  print(1:nhyp)
+  indexes <- expand.grid(split(1:nhyp,code))
+
   for(i in 1:d) {
     for(k in 1:nrow(indexes)) {
       print(k)
@@ -196,13 +210,7 @@ kCV.MKL <- function(ARRAY, COEFF, KERNH, kernels, method, ...) {
       }
     }
   }
-  if(!is.null(KERNH)) {
-  ii <-  as.numeric(ii - nrow(KERNH) * as.numeric((1:ncol(KERNH))-1))
-  best.h <- c()
-  for(t in 1:ncol(KERNH))   best.h <- c(best.h, KERNH[ii[t],t])
-  } else {
-    best.h <- NULL
-  }
+  best.h <- unliH[as.numeric(ii)]
   best.hyp <- list(coeff=best.coeff,h=best.h,cost=best.cost,epsilon=best.e,cut=best.cut,nu=best.nu,error= min.error)
   return(best.hyp)
 }

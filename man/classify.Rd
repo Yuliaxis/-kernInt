@@ -13,7 +13,7 @@ classify(data, y, coeff, kernel, prob = FALSE, classimb = "no",
 \item{y}{Reponse variable (binary)}
 
 \item{coeff}{ONLY IN MKL CASE: A *t·m* matrix of the coefficients, where *m* are the number of different data types and *t* the number of
-different coefficient combinations to evaluate via k-CV.}
+different coefficient combinations to evaluate via k-CV. If absent, the same weight is given to all data sources.}
 
 \item{kernel}{"cRBF" for clrRBF, "qJac" for quantitative Jaccard,  "wqJac" for quantitative Jaccard with weights.
 "matrix" if a pre-calculated kernel matrix is given as input. To perform MKL: Vector of *m* kernels to apply to each data type.}
@@ -31,8 +31,8 @@ different coefficient combinations to evaluate via k-CV.}
 \item{C}{The cost. A vector with the possible costs (SVM hyperparameter) to evaluate via k-Cross-Val can be entered too.}
 
 \item{H}{Gamma hyperparameter. A vector with the possible values to chose the best one via k-Cross-Val can be entered.
-For the MKL, a matrix *n·m*  with the possible hyperparameters can be entered, being' *m* is the number of different data types,
-and *n* the number of different hyperparameters.}
+For the MKL, a list with *m* entries can be entered, being' *m* is the number of different data types. Each element on the list
+must be a number or, if k-Cross-Validation is needed, a vector with the hyperparameters to evaluate for each data type.}
 
 \item{CUT}{Cut-off if prob = TRUE. If CUT is a vector, the best cut-off can be obtained via cross-validation.}
 }

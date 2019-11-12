@@ -140,6 +140,9 @@ Linear <- function(data) {
   return(Kmatrix)
 }
 
+RBF <- function(data,h=0.05) {
+ print("not yet")
+}
 
 #Kernel selection
 #' @keywords internal

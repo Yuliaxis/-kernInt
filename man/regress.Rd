@@ -8,25 +8,27 @@ regress(data, y, coeff, kernel, p = 0.8, C = 1, H = NULL, E = 0.1,
   k)
 }
 \arguments{
-\item{data}{Input data}
+\item{data}{Input data: a matrix or data.frame with predictor variables. To perform MKL: a list of the *m* types of data to combine.}
 
 \item{y}{Reponse variable (continuous)}
 
 \item{coeff}{ONLY IN MKL CASE: A *t·m* matrix of the coefficients, where *m* are the number of different data types and *t* the number of
-different coefficient combinations to evaluate via k-CV.}
+different coefficient combinations to evaluate via k-CV. If absent, the same weight is given to all data sources.}
 
-\item{kernel}{"cRBF" for clrRBF, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights.
-"matrix" if a pre-calculated kernel matrix is given as input.}
+\item{kernel}{"linear" for linear kernel, cRBF" for clrRBF, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights.
+"matrix" if a pre-calculated kernel matrix is given as input. To perform MKL: Vector of *m* kernels to apply to each data type.}
 
 \item{p}{Proportion of total data instances in the training set}
 
-\item{C}{A vector with the possible costs to evaluate via k-Cross-Val. If no argument is provided cross-validation is not performed.}
+\item{C}{A cost, or a vector with the possible costs to evaluate via k-Cross-Val.}
 
-\item{H}{Gamma hyperparameter}
+\item{H}{Gamma hyperparameter. A vector with the possible values to chose the best one via k-Cross-Val can be entered.
+For the MKL, a list with *m* entries can be entered, being' *m* is the number of different data types. Each element on the list
+must be a number or, if k-Cross-Validation is needed, a vector with the hyperparameters to evaluate for each data type.}
 
-\item{E}{Epsilon hyperparameter}
+\item{E}{Epsilon hyperparameter, or a vector with the possible epsilons to evaluate via k-Cross-Val.}
 
-\item{k}{The k for the k-Cross Validation. Minimum k = 2.}
+\item{k}{The k for the k-Cross Validation. Minimum k = 2. If no argument is provided cross-validation is not performed.}
 }
 \value{
 NMSE (normalized mean squared error)

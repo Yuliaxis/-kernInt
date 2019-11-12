@@ -9,17 +9,19 @@
 #' measures from the same individual. The function will ensure that all repeated measures are used either to train
 #' or to test the model, but not for both, thus preserving the independence between the training and tets sets.
 #'
-#' @param data Input data
+#' @param data Input data: a matrix or data.frame with predictor variables. To perform MKL: a list of the *m* types of data to combine.
 #' @param y Reponse variable (continuous)
-#' @param kernel "cRBF" for clrRBF, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights.
-#' "matrix" if a pre-calculated kernel matrix is given as input.
+#' @param kernel "linear" for linear kernel, cRBF" for clrRBF, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights.
+#' "matrix" if a pre-calculated kernel matrix is given as input. To perform MKL: Vector of *m* kernels to apply to each data type.
 #' @param coeff ONLY IN MKL CASE: A *t·m* matrix of the coefficients, where *m* are the number of different data types and *t* the number of
-#' different coefficient combinations to evaluate via k-CV.
+#' different coefficient combinations to evaluate via k-CV. If absent, the same weight is given to all data sources.
 #' @param p Proportion of total data instances in the training set
-#' @param C A vector with the possible costs to evaluate via k-Cross-Val. If no argument is provided cross-validation is not performed.
-#' @param H Gamma hyperparameter
-#' @param E Epsilon hyperparameter
-#' @param k The k for the k-Cross Validation. Minimum k = 2.
+#' @param C A cost, or a vector with the possible costs to evaluate via k-Cross-Val.
+#' @param H Gamma hyperparameter. A vector with the possible values to chose the best one via k-Cross-Val can be entered.
+#' For the MKL, a list with *m* entries can be entered, being' *m* is the number of different data types. Each element on the list
+#' must be a number or, if k-Cross-Validation is needed, a vector with the hyperparameters to evaluate for each data type.
+#' @param E Epsilon hyperparameter, or a vector with the possible epsilons to evaluate via k-Cross-Val.
+#' @param k The k for the k-Cross Validation. Minimum k = 2. If no argument is provided cross-validation is not performed.
 #' @return NMSE (normalized mean squared error)
 #' @examples
 #' # Data normalization
@@ -48,7 +50,7 @@ regress <- function(data, y, coeff,  kernel, p=0.8, C=1, H=NULL, E=0.1, k) {
     stop("Wrong input data class.")
   }
   # 1. TR/TE
-  if("time2" %in% kernel) {
+  if("time2" %in% kernel || "time" %in% kernel ) {
     print("Longitudinal")
     index <- longTRTE(data,p)
   } else {
@@ -71,8 +73,6 @@ regress <- function(data, y, coeff,  kernel, p=0.8, C=1, H=NULL, E=0.1, k) {
     trMatrix <- Jmatrix[learn.indexes,learn.indexes]
     teMatrix <- Jmatrix[test.indexes,learn.indexes]
   }
-
-  print(trMatrix[1:10,1:10,])
 
   # 3. Do R x k-Cross Validation
   if(hasArg(k)) {
@@ -97,13 +97,15 @@ regress <- function(data, y, coeff,  kernel, p=0.8, C=1, H=NULL, E=0.1, k) {
     # if(length(H)>1) paste("H > 1 - Only the first element will be used")
     cost <- C[1]
     eps <- E[1]
+    if(!is.null(H)) H <- kernHelp(H)$hyp
+
     # H <- H[1]
   }
 
   if(m>1) {
     for(j in 1:m) trMatrix[,,j] <- hyperkSelection(K=trMatrix[,,j], h=H[j],  kernel=kernel[j])
     for(j in 1:m) teMatrix[,,j] <- hyperkSelection(K=teMatrix[,,j], h=H[j],  kernel=kernel[j])
-    print(trMatrix[1:10,1:10,])
+    print(trMatrix[1:10,1:10,4])
 
     trMatrix <- KInt(data=trMatrix,coeff=coeff)
     teMatrix <- KInt(data=teMatrix,coeff=coeff)
