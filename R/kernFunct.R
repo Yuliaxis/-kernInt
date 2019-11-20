@@ -134,14 +134,23 @@ covmat <- function(ind, visits, h=0.5) {
 # Linear kernel (via crossprod)
 #' @keywords internal
 Linear <- function(data) {
-  Kmatrix <- crossprod(t(data))
-  D <- diag(1/sqrt(diag(Kmatrix)))
-  Kmatrix <- D %*% Kmatrix %*% D
-  return(Kmatrix)
+  K <- tcrossprod(data)
+  D <- diag(1/sqrt(diag(K)))
+  K <- D %*% K %*% D
+  rownames(K) <- rownames(data)
+  colnames(K) <- rownames(data)
+  return(K)
 }
 
-RBF <- function(data,h=0.05) {
- print("not yet")
+#Kernel selection
+#' @keywords internal
+RBF <- function(data,h=NULL) {
+  N <- nrow(data)
+  kk <- tcrossprod(data)
+  dd <- diag(kk)
+  K <- 2*kk-matrix(dd,N,N)-t(matrix(dd,N,N))
+  if(!is.null(h) && h != 0 ) K <- exp(h*K) #RBF
+  return(K)
 }
 
 #Kernel selection
@@ -169,8 +178,10 @@ kernelSelect <- function(kernel,data,y,h=NULL) { #h és un hiperparàmetre
   } else if (kernel=="linear") {
     cat("Linear \n")
     return(Linear(data))
-    } else {
-
+  } else if (kernel=="rbf") {
+    cat("RBF \n")
+    return(RBF(data,h))
+  } else {
     stop("Kernel not available.") ##temporalment
   }
 }

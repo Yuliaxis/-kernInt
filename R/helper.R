@@ -98,8 +98,7 @@ sampl <- function(data, diagn, learn.indexes, test.indexes, kernel, type) {
   ntest <- length(test.indexes)
   N <- nlearn + ntest
   diagn <- diagn[c(learn.indexes,test.indexes)]
-  print(nlearn)
-  Sample <- dataSampl(data, diagn, nlearn=nlearn, N=N, learn.indexes,test.indexes, kernel=kernel, type)
+  Sample <- dataSampl(data, diagn=diagn, nlearn=nlearn, N=N, learn.indexes,test.indexes, kernel=kernel, type)
 
   data <- Sample$data
   diagn <- Sample$diagn
@@ -115,15 +114,16 @@ dataSampl <- function(data, diagn, nlearn, N, learn.indexes,test.indexes, kernel
 
 dataSampl.array <- function(data, diagn, nlearn, N, learn.indexes,test.indexes, kernel, type) {
 
-  if(kernel == "matrix") {
+  if(sum(!(kernel %in% "matrix")) == 0) {
     if(type == "ubSMOTE") stop("Kernel matrix as input is not compatible with SMOTE. Original dataset is required.")
 
     dades <- data[c(learn.indexes,test.indexes),c(learn.indexes,test.indexes),]
     dadespr <- dades[,,1]
     rownames(dadespr) <- 1:N
 
-    if(type == "ubOver")  SobrDadesTr <- ubBalance(dadespr[1:nlearn,], diagn[1:nlearn], type=type, positive=2, k=0)
-    if(type == "ubUnder")  SobrDadesTr <- ubBalance(dadespr[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
+    # if(type == "ubOver")
+    SobrDadesTr <- ubBalance(dadespr[1:nlearn,], diagn[1:nlearn], type=type, positive=2, k=0)
+    # if(type == "ubUnder")  SobrDadesTr <- ubBalance(dadespr[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
 
     ii <- c(as.numeric(rownames(SobrDadesTr$X)),(nlearn+1):N)
     data <- data[ii,ii,]
@@ -136,23 +136,39 @@ dataSampl.array <- function(data, diagn, nlearn, N, learn.indexes,test.indexes, 
   return(list(data=data,diagn=diagn,nlearn=nlearn))
 }
 
-
 dataSampl.list <- function(data, diagn, nlearn, N, learn.indexes,test.indexes, kernel, type) {
   m <- length(data)
+  if(sum(!(kernel %in% "matrix")) == 0) {
+    data2 <- array(NA,dim=c(dim(data[[1]]),m))
+    for(i in 1:m) data2[,,i] <- data[[i]]
+    return(dataSampl.array(data=data2,diagn=diagn, nlearn=nlearn, N=N, learn.indexes,test.indexes, kernel=kernel, type))
+  }
+  if((kernel %in% "time") || (kernel %in% "cov")) stop("Not available yet")
 
-    if(type == "ubSMOTE") {
-      SobrDadesTr <- list()
-      for(i in 1:m) SobrDadesTr[[i]] <- ubBalance(data[[i]][1:nlearn,], diagn[1:nlearn], type=type, positive=2)
-    } else {
-      dadespr <- data[[1]]
-      rownames(dadespr) <- 1:N
-      if(type == "ubOver")  SobrDadesTr <- ubBalance(dadespr[1:nlearn,], diagn[1:nlearn], type=type, positive=2, k=0)
-      if(type == "ubUnder")  SobrDadesTr <- ubBalance(dadespr[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
-      ii <- c(as.numeric(rownames(SobrDadesTr$X)),(nlearn+1):N)
-      diagn <- diagn[ii]
-      nlearn <- length(SobrDadesTr$Y)
-      for(i in 1:m) data[[i]] <- data[[i]][ii,]
+  # if(type == "ubSMOTE") {
+    SobrDadesTr <- list()
+    for(i in 1:m) {
+
+      dades <- data[[i]]
+      dades <- dades[c(learn.indexes,test.indexes),]
+      SobrDadesTr[[i]] <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2,k=0)
     }
+    data <- rbind(SobrDadesTr$X,dades[(nlearn+1):N,])
+    nlearn <- length(SobrDadesTr$Y)
+      # N <- nrow(data)
+    diagn <- c(SobrDadesTr$Y, diagn[test.indexes])
+    diagn <- as.factor(diagn)
+    # } else {
+      # dadespr <- dades
+      # rownames(dadespr) <- 1:N
+      # if(type == "ubOver")
+      # SobrDadesTr <- ubBalance(dadespr[1:nlearn,], diagn[1:nlearn], type=type, positive=2, k=0)
+      # if(type == "ubUnder")  SobrDadesTr <- ubBalance(dadespr[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
+      # ii <- c(as.numeric(rownames(SobrDadesTr$X)),(nlearn+1):N)
+      # diagn <- diagn[ii]
+      # nlearn <- length(SobrDadesTr$Y)
+      # for(i in 1:m) data[[i]] <- data[[i]][ii,]
+    # }
   return(list(data=data,diagn=diagn,nlearn=nlearn))
 }
 
@@ -163,8 +179,9 @@ dataSampl.default <- function(data, diagn, nlearn, N, learn.indexes,test.indexes
     dades <- data[c(learn.indexes,test.indexes),c(learn.indexes,test.indexes)]
     rownames(dades) <- 1:N
 
-    if(type == "ubOver")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2, k=0)
-    if(type == "ubUnder")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
+    # if(type == "ubOver")
+      SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2, k=0)
+    # if(type == "ubUnder")  SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
 
     ii <- c(as.numeric(rownames(SobrDadesTr$X)),(nlearn+1):N)
     data <- data[ii,ii]
@@ -174,9 +191,10 @@ dataSampl.default <- function(data, diagn, nlearn, N, learn.indexes,test.indexes
   } else {
     dades <- data[c(learn.indexes,test.indexes),]
 
-    if(type == "ubUnder") SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
-    if(type == "ubOver") SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2,  k=0)
-    if(type == "ubSMOTE") SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
+    # if(type == "ubUnder") SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
+    # if(type == "ubOver")
+    SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2,  k=0)
+    # if(type == "ubSMOTE") SobrDadesTr <- ubBalance(dades[1:nlearn,], diagn[1:nlearn], type=type, positive=2)
     data <- rbind(SobrDadesTr$X,dades[(nlearn+1):N,])
     nlearn <- length(SobrDadesTr$Y)
     # N <- nrow(data)
@@ -201,9 +219,11 @@ hyperkSelection <- function(K, h, kernel) {
   }
   if(kernel == "qJac" | kernel == "wqJac") {
     Kmatrix <- exp(h*K)/exp(h) #Standardized Kernel Matrix. Otherwise exp(g*K)
-  } else if(kernel == "cRBF" | kernel == "RBF" | kernel == "time" | kernel == "time2") {
+  } else if(kernel == "cRBF" | kernel == "time" | kernel == "time2") {
     Kmatrix <- exp(-h*K)
     Kmatrix[is.na(Kmatrix)] <- 0
+  } else if(kernel == "rbf") {
+    Kmatrix <- exp(h*K)
   } else if(kernel == "cov") {
     Kmatrix <- K
     Kmatrix[Kmatrix!=0] <- h
@@ -218,6 +238,8 @@ hyperkSelection <- function(K, h, kernel) {
 
 ##  NMSE (regression)
 #' @keywords internal
+#' @importFrom stats var
+
 error.norm <- function(target,prediction) {
   N <- length(target)
   error <- sum((target-prediction)^2)/((N-1)*var(target)) ##(norm.mse <- model$deviance/((N-1)*var(target)))

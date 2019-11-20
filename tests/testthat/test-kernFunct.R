@@ -9,6 +9,20 @@ test_that("Ruzicka kernel works", {
   expect_equal(round(qJacc(m,h=1),digits=5), resg1)
 })
 
+test_that("Linear kernel works", {
+  m <- matrix(c(0.333,0.2,0.1,0.333,0.5,0.1,0.333,0.3,0.8),nrow=3,ncol=3)
+  res <- matrix(c(1,0.93659, 0.71067, 0.93659, 1,0.61901, 0.71067, 0.61901, 1),nrow=3,ncol=3)
+  expect_equal(round(Linear(m),digits=5), res)
+})
+
+test_that("RBF kernel works", {
+  m <- matrix(c(0.333,0.2,0.1,0.333,0.5,0.1,0.333,0.3,0.8),nrow=3,ncol=3)
+  part <- matrix(c(0, -0.04667, -0.32667, -0.04667, 0, -0.42000, -0.32667, -0.42000, 0),nrow=3,ncol=3)
+  resg01 <- matrix(c(1, 0.99534, 0.96786, 0.99534, 1, 0.95887, 0.96786, 0.95887, 1),nrow=3,ncol=3)
+  expect_equal(round(RBF(m),digits=5), part)
+  expect_equal(round(RBF(m,h=0),digits=5), part)
+  expect_equal(round(RBF(m,h=0.1),digits=5), resg01)
+})
 
 test_that("General Evaluation kernel procedure works", {
   m <- matrix(c(0.333,0.2,0.1,0.333,0.5,0.1,0.333,0.3,0.8),nrow=3,ncol=3)

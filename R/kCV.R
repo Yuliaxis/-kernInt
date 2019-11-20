@@ -1,6 +1,7 @@
 ## K-fold cross- validation (classification)
 #' @keywords internal
 #' @importFrom kernlab ksvm cross
+#' @importFrom stats na.omit
 
 kCV.class <- function(CUT, COST, K, Yresp, k, R, prob, classimb=FALSE) {
 
@@ -128,6 +129,7 @@ kCV.core <- function(H, kernel, method, K, ...) {
     if(h==0) h <- NULL ## molt lleig això
     print(h)
     Kmatrix <- hyperkSelection(K=K,h=h,kernel=kernel)
+    print(Kmatrix[1:10,1:10])
     # Y <- Yresp
     if(method == "svc") {
       bh <- kCV.class(K=Kmatrix, ...) ## calls svm classification
@@ -180,17 +182,13 @@ kCV.MKL <- function(ARRAY, COEFF, KERNH, kernels, method, ...) {
   ARRAY2 <- array(0,dim=c(dim(ARRAY)[1],dim(ARRAY)[2],nhyp))
   for(k in 1:nhyp) {
     j <- as.numeric(which(k <= chlp)[1])
-    print(k)
-    print(j)
     ARRAY2[,,k] <- hyperkSelection(ARRAY[,,j],h=unliH[k],kernel=kernels[j])
   }
   code <- rep(1:d2, nhxh)
-  print(1:nhyp)
   indexes <- expand.grid(split(1:nhyp,code))
 
   for(i in 1:d) {
     for(k in 1:nrow(indexes)) {
-      print(k)
       Kmatrix <- KInt(ARRAY2[,,as.numeric(indexes[k,])],coeff=COEFF[i,])
       if(method == "svc") {
         bh <- kCV.class(Kmatrix,...) ## calls svm classification

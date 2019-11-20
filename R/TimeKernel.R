@@ -84,3 +84,44 @@ minSep <- function(table,n) {
   names(INDEX) <-  rownames(table)
   return(INDEX)
 }
+
+### LSQ coefficients
+
+
+#' Least Squares Coefficients
+#'
+#' @param data  A matrix with longitudinal data, with a column named "time" containing the time
+#' (in arbitrary units) of the measure. lqs() will consider that the row names that share id are repeated
+#' measures at different times from the same individual.
+#' @param degree The degree of the polynomial to be fitted.
+#' @return A matrix with the standardized intercept and coefficients of the model for each individual.
+#' @examples
+#' colnames(growth) <-  c("sex", "time", "height")
+#' lsq(data=growth[,2:3],degree=2)
+#' @importFrom stats as.formula coefficients lm var
+#' @export
+
+lsq <- function(data, degree) {
+
+  condition <- colnames(data) %in% "time"
+  if(sum(condition) != 1) stop("Time column needed")
+  condition <- which(condition)
+  data <- data[,c(condition,(1:ncol(data))[-condition])]
+
+  ids <- unique(rownames(data))
+  COEFF <- matrix(NA,nrow=length(ids),ncol=degree+1)
+  rownames(COEFF) <- ids
+  colnames(COEFF) <- c("Intercept",paste("x",seq(1:degree),sep="."))
+  for(ID in ids) {
+    subdata <- data[which(rownames(data) == ID),]
+    subdata <- as.data.frame(subdata)
+    for(cn in colnames(data)[-1]) {
+      print(cn)
+      model <- lm(as.formula(paste(paste("subdata",cn,sep="$")," ~  poly(subdata$time,degree)")))
+      COEFF[ID,] <- coefficients(model)
+    }
+  }
+  std <- sqrt(apply(COEFF,2,var))
+  OUT <- t(t(COEFF)/std)
+  return(OUT)
+}

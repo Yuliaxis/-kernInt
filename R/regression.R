@@ -58,7 +58,6 @@ regress <- function(data, y, coeff,  kernel, p=0.8, C=1, H=NULL, E=0.1, k) {
   }
   learn.indexes <- index$li
   test.indexes <- index$ti
-  print(test.indexes)
 
   # 2. Compute kernel matrix
 
@@ -67,8 +66,6 @@ regress <- function(data, y, coeff,  kernel, p=0.8, C=1, H=NULL, E=0.1, k) {
     trMatrix <- Jmatrix[learn.indexes,learn.indexes,]
     teMatrix <- Jmatrix[test.indexes,learn.indexes,]
   } else {
-    print(dim(data))
-    print(length(y))
     Jmatrix <- kernelSelect(kernel=kernel,data=data,y=y,h=NULL)
     trMatrix <- Jmatrix[learn.indexes,learn.indexes]
     teMatrix <- Jmatrix[test.indexes,learn.indexes]
@@ -82,7 +79,6 @@ regress <- function(data, y, coeff,  kernel, p=0.8, C=1, H=NULL, E=0.1, k) {
       bh <- kCV.MKL(ARRAY=trMatrix, COEFF=coeff, KERNH=H, kernels=kernel, method="svr", COST = C,EPS = E,
                      Y=y[learn.indexes], k=k,  R=1)
       coeff <- bh$coeff ##indexs
-      print(coeff)
 
     } else {
       bh <- kCV.core(H = H, method="svr", kernel=kernel,EPS = E, COST = C, K=trMatrix, Y=y[learn.indexes], k=k, R=1)
@@ -98,23 +94,17 @@ regress <- function(data, y, coeff,  kernel, p=0.8, C=1, H=NULL, E=0.1, k) {
     cost <- C[1]
     eps <- E[1]
     if(!is.null(H)) H <- kernHelp(H)$hyp
-
-    # H <- H[1]
   }
 
   if(m>1) {
     for(j in 1:m) trMatrix[,,j] <- hyperkSelection(K=trMatrix[,,j], h=H[j],  kernel=kernel[j])
     for(j in 1:m) teMatrix[,,j] <- hyperkSelection(K=teMatrix[,,j], h=H[j],  kernel=kernel[j])
-    print(trMatrix[1:10,1:10,4])
-
     trMatrix <- KInt(data=trMatrix,coeff=coeff)
     teMatrix <- KInt(data=teMatrix,coeff=coeff)
   }  else {
     trMatrix <- hyperkSelection(trMatrix,h=H,kernel=kernel)
     teMatrix <- hyperkSelection(teMatrix,h=H,kernel=kernel)
   }
-  print(trMatrix[1:10,1:10])
-
 
   model <- ksvm(trMatrix, y[learn.indexes],type="eps-svr", kernel="matrix", C=cost, epsilon = eps)
 
@@ -122,8 +112,6 @@ regress <- function(data, y, coeff,  kernel, p=0.8, C=1, H=NULL, E=0.1, k) {
   teMatrix <- teMatrix[,SVindex(model),drop=FALSE]
   teMatrix <- as.kernelMatrix(teMatrix)
   pred <- kernlab::predict(model,teMatrix)
-  print(pred)
-  print(y[test.indexes])
   return( error.norm(y[test.indexes],pred))
 }
 

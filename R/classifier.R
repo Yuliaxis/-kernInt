@@ -53,7 +53,6 @@
 #' classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",classimb="weights",C=c(0.001,0.01),k=10)
 #' @importFrom kernlab as.kernelMatrix kernelMatrix predict rbfdot SVindex
 #' @importFrom unbalanced ubBalance
-#' @importFrom ROSE roc.curve
 #' @export
 
 
@@ -76,6 +75,7 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
   } else {
     stop("Wrong input data class.")
   }
+
   # 1. TR/TE
   if("time2" %in% kernel || "time" %in% kernel ) {
     print("Longitudinal")
@@ -85,12 +85,13 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
   }
   learn.indexes <- index$li
   test.indexes <- index$ti
+
   if(classimb == "weights") {
     wei <- c("1"=as.numeric(summary(diagn[learn.indexes])[2]),"2"=as.numeric(summary(diagn[learn.indexes])[1]))
   } else {
     wei <- NULL
   }
-print(test.indexes)
+
   if(classimb=="data")  {
     s <- sampl(data=data,diagn=diagn,learn.indexes=learn.indexes,test.indexes=test.indexes,kernel=kernel,type=type)
     data <- s$data
@@ -120,7 +121,6 @@ print(test.indexes)
       bh <- kCV.MKL(ARRAY=trMatrix, COEFF=coeff, KERNH=H, kernels=kernel, method="svc", COST = C,
                     CUT=CUT, Y=diagn[learn.indexes], k=k,  prob=prob, R=1,classimb=wei)
       coeff <- bh$coeff ##indexs
-      print(coeff)
 
     } else {
     bh <- kCV.core(method="svc",COST = C, H = H, kernel=kernel, CUT=CUT, K=trMatrix, prob=prob,
@@ -134,13 +134,11 @@ print(test.indexes)
     if(length(C)>1) paste("C > 1 and no k provided - Only the first element will be used")
     cost <- C[1]
     # if(length(H)>1) paste("H > 1 and no k provided- Only the first element will be used")
-    # H <- H[1]
     if(!is.null(CUT) && length(CUT)>1) {
       paste("CUT > 1 and no k provided - Only the first element will be used")
       CUT <- CUT[1]
     }
     if(!is.null(H)) H <- kernHelp(H)$hyp
-
   }
 
   if(m>1) {
@@ -154,13 +152,7 @@ print(test.indexes)
   }
 
   # 4. Model
-  print(H)
-  print(dim(trMatrix))
-  print(trMatrix[1:10,1:10])
-  print(length(diagn[learn.indexes]))
-  print(prob)
-  print(cost)
-  print(wei)
+
   model <- ksvm(trMatrix, diagn[learn.indexes], kernel="matrix", type="C-svc", prob.model = prob, C=cost, class.weights=wei)
 
   # 5. Prediction
@@ -171,10 +163,10 @@ print(test.indexes)
   if(prob)  {
     pred <- predict(model,teMatrix,type = "probabilities")
     if(is.null(CUT)) {
-      return(data.frame(Actual=diagn[test.indexes],Predicted = as.factor(pred)))
+      return(cbind(Actual=diagn[test.indexes],Predicted = as.factor(pred)))
     }
-    print(paste("Best cut is", cut))
-    pred <- (pred[,2] < cut)
+    print(paste("Best cut is", CUT))
+    pred <- (pred[,2] < CUT)
     pred[pred] <- 1
     pred[pred==0] <- 2
   }   else    {
@@ -182,7 +174,6 @@ print(test.indexes)
     }
    pred <- as.factor(pred)
    levels(pred) <- c("1","2")
-   print(pred)
 
   ### Confusion matrix
   ct <- table(Truth=diagn[test.indexes], Pred=pred)
