@@ -56,8 +56,9 @@ kCV.class <- function(CUT, COST, K, Yresp, k, R, prob, classimb=FALSE) {
         best.cut <- cut
       }
     }
-  print(best.cut)
   best.hyp <- data.frame(cost=best.cost,epsilon=NA,cut=best.cut,nu=NA, error= min.error)
+  print(best.hyp)
+
   return(best.hyp)
 }
 
@@ -129,7 +130,6 @@ kCV.core <- function(H, kernel, method, K, ...) {
     if(h==0) h <- NULL ## molt lleig això
     print(h)
     Kmatrix <- hyperkSelection(K=K,h=h,kernel=kernel)
-    print(Kmatrix[1:10,1:10])
     # Y <- Yresp
     if(method == "svc") {
       bh <- kCV.class(K=Kmatrix, ...) ## calls svm classification

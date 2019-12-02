@@ -4,14 +4,16 @@
 \alias{lsq}
 \title{Least Squares Coefficients}
 \usage{
-lsq(data, degree)
+lsq(data, degree = 1, orthog = FALSE)
 }
 \arguments{
 \item{data}{A matrix with longitudinal data, with a column named "time" containing the time
-(in arbitrary units) of the measure. lqs() will consider that the row names that share id are repeated
+(in arbitrary units) of the measure. lsq() will consider that the row names that share id are repeated
 measures at different times from the same individual.}
 
 \item{degree}{The degree of the polynomial to be fitted.}
+
+\item{orthog}{If true, use orthogonal polynomials.}
 }
 \value{
 A matrix with the standardized intercept and coefficients of the model for each individual.

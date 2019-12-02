@@ -1,4 +1,14 @@
-# CLASSIFICATION PERFORMANCE MEASURES
+# PERFORMANCE MEASURES
+
+##  NMSE (regression)
+#' @keywords internal
+#' @importFrom stats var
+
+error.norm <- function(target,prediction) {
+  N <- length(target)
+  error <- sum((target-prediction)^2)/((N-1)*var(target))
+  return(error)
+}
 
 #' Accuracy
 #' @param ct Confusion Matrix

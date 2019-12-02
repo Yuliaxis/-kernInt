@@ -77,30 +77,32 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
   }
 
   # 1. TR/TE
-  if("time2" %in% kernel || "time" %in% kernel ) {
-    print("Longitudinal")
-    index <- longTRTE(data,p)
-  } else {
+  # if("time2" %in% kernel || "time" %in% kernel ) {
+  # print("Longitudinal")
+  # index <- longTRTE(data,p)
+  # } else {
     index <- finalTRTE(data,p) ## data és una matriu en aquest cas. passar-ho a MKL.
-  }
+  # }
   learn.indexes <- index$li
   test.indexes <- index$ti
 
-  if(classimb == "weights") {
-    wei <- c("1"=as.numeric(summary(diagn[learn.indexes])[2]),"2"=as.numeric(summary(diagn[learn.indexes])[1]))
-  } else {
-    wei <- NULL
-  }
-
-  if(classimb=="data")  {
-    s <- sampl(data=data,diagn=diagn,learn.indexes=learn.indexes,test.indexes=test.indexes,kernel=kernel,type=type)
-    data <- s$data
-    diagn <- s$y
-    learn.indexes <- s$li
-    test.indexes <- s$ti
+  if(type=="ubSMOTE") {
+    if(classimb=="data" && !("matrix" %in% kernel)) {
+      s <- smoteSample(data=data, diagn=diagn, m=m, learn.indexes=learn.indexes,
+                  test.indexes=test.indexes, kernel=kernel)
+      data <- as.matrix(s$data)
+      diagn <- s$y
+      learn.indexes <- s$li
+      test.indexes <- s$ti
+    } else {
+      stop("SMOTE is not compatible with kernel = matrix")
+    }
   }
 
     # 2. Compute kernel matrix
+
+  try <- diagn[learn.indexes]
+  tey <- diagn[test.indexes]
 
   if(m>1) {
     Jmatrix  <- seqEval(DATA=data, y=diagn, kernels=kernel,h=NULL) ## Sense especificar hiperparàmetre.
@@ -112,19 +114,34 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
     teMatrix <- Jmatrix[test.indexes,learn.indexes]
   }
 
-  # 3. Do R x k-Cross Validation
+
+  # 3. Data imbalance
+  if(classimb == "weights") {
+    wei <- c("1"=as.numeric(summary(try)[2]),"2"=as.numeric(summary(try)[1]))
+  } else {
+    wei <- NULL
+  }
+
+  if(classimb=="data" & type != "ubSMOTE")  {
+    s <- dataSampl(data=trMatrix,tedata=teMatrix, diagn=try,kernel=kernel,type=type)
+    trMatrix <- s$data
+    teMatrix <- s$tedata
+    try <- s$diagn
+  }
+
+  # 4. Do R x k-Cross Validation
 
   if(hasArg(k)) {
     if(k<2) stop("k should be equal to or higher than 2")
     if(m>1)  {
       if(!hasArg(coeff)) coeff <- rep(1/m,m)
       bh <- kCV.MKL(ARRAY=trMatrix, COEFF=coeff, KERNH=H, kernels=kernel, method="svc", COST = C,
-                    CUT=CUT, Y=diagn[learn.indexes], k=k,  prob=prob, R=1,classimb=wei)
+                    CUT=CUT, Y=try, k=k,  prob=prob, R=k,classimb=wei)
       coeff <- bh$coeff ##indexs
 
     } else {
     bh <- kCV.core(method="svc",COST = C, H = H, kernel=kernel, CUT=CUT, K=trMatrix, prob=prob,
-                   Y=diagn[learn.indexes], k=k, R=1,classimb=wei)
+                   Y=try, k=k, R=k,classimb=wei)
     }
     CUT <- bh$cut
     cost <- bh$cost
@@ -151,11 +168,11 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
     teMatrix <- hyperkSelection(teMatrix,h=H,kernel=kernel)
   }
 
-  # 4. Model
+  # 5. Model
 
-  model <- ksvm(trMatrix, diagn[learn.indexes], kernel="matrix", type="C-svc", prob.model = prob, C=cost, class.weights=wei)
+  model <- ksvm(trMatrix, try, kernel="matrix", type="C-svc", prob.model = prob, C=cost, class.weights=wei)
 
-  # 5. Prediction
+  # 6. Prediction
 
   teMatrix <- teMatrix[,SVindex(model),drop=FALSE]
   teMatrix <- as.kernelMatrix(teMatrix)
@@ -163,7 +180,7 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
   if(prob)  {
     pred <- predict(model,teMatrix,type = "probabilities")
     if(is.null(CUT)) {
-      return(cbind(Actual=diagn[test.indexes],Predicted = as.factor(pred)))
+      return(cbind(Actual=tey,Predicted = as.factor(pred)))
     }
     print(paste("Best cut is", CUT))
     pred <- (pred[,2] < CUT)
@@ -176,7 +193,7 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
    levels(pred) <- c("1","2")
 
   ### Confusion matrix
-  ct <- table(Truth=diagn[test.indexes], Pred=pred)
+  ct <- table(Truth=tey, Pred=pred)
   return(ct)
 }
 
