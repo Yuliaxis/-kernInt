@@ -165,7 +165,7 @@ kernelSelect <- function(kernel,data,y,h=NULL) { #h és un hiperparàmetre
     return(wqJacc(data=data,y=y,h=h))
   }  else if(kernel == "cRBF") {
     cat("clr + RBF \n")
-    return(aitch.dist(data))
+    return(clrRBF(data=data,h=h))
   } else if(kernel == "time") {
     cat("Time matrix \n")
     return(TimeK(data,h))

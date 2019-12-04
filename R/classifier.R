@@ -86,18 +86,18 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
   learn.indexes <- index$li
   test.indexes <- index$ti
 
-  if(type=="ubSMOTE") {
-    if(classimb=="data" && !("matrix" %in% kernel)) {
-      s <- smoteSample(data=data, diagn=diagn, m=m, learn.indexes=learn.indexes,
-                  test.indexes=test.indexes, kernel=kernel)
-      data <- as.matrix(s$data)
-      diagn <- s$y
-      learn.indexes <- s$li
-      test.indexes <- s$ti
-    } else {
-      stop("SMOTE is not compatible with kernel = matrix")
-    }
-  }
+  # if(type=="ubSMOTE") {
+  #   if(classimb=="data" && !("matrix" %in% kernel)) {
+  #     s <- smoteSample(data=data, diagn=diagn, m=m, learn.indexes=learn.indexes,
+  #                 test.indexes=test.indexes, kernel=kernel)
+  #     data <- as.matrix(s$data)
+  #     diagn <- s$y
+  #     learn.indexes <- s$li
+  #     test.indexes <- s$ti
+  #   } else {
+  #     stop("SMOTE is not compatible with kernel = matrix")
+  #   }
+  # }
 
     # 2. Compute kernel matrix
 
@@ -122,12 +122,12 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
     wei <- NULL
   }
 
-  if(classimb=="data" & type != "ubSMOTE")  {
-    s <- dataSampl(data=trMatrix,tedata=teMatrix, diagn=try,kernel=kernel,type=type)
-    trMatrix <- s$data
-    teMatrix <- s$tedata
-    try <- s$diagn
-  }
+  # if(classimb=="data" & type != "ubSMOTE")  {
+  #   s <- dataSampl(data=trMatrix,tedata=teMatrix, diagn=try,kernel=kernel,type=type)
+  #   trMatrix <- s$data
+  #   teMatrix <- s$tedata
+  #   try <- s$diagn
+  # }
 
   # 4. Do R x k-Cross Validation
 

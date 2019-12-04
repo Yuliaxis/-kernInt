@@ -37,62 +37,21 @@ In R console:
 
 - `soilMetaData`: Soil pH, annual season precipitation and temperature, country, elevation, etc.
  
-[**IBDMDB** ](https://ibdmdb.org/tunnel/public/HMP2/WGS/1818/products)
+[**Growth** ]: Longitudinal height data of 54 girls and 39 boys (93 individuals in total) from age 11 to 18.
 
-- `speMGX`: Species abundances of intestinal microbiota of 84 individuals, 41 with Chron's Disease, 24 with Ulcerative Colitis, and 19 without inflamatory inflammatory bowel disease.
-
-- `genMGX`: Genus abundances of intestinal microbiota of 84 individuals, 41 with Chron's Disease, 24 with Ulcerative Colitis, and 19 without inflamatory inflammatory bowel disease.
  
 ## Usage
 
 ### Visualization / Ordination
 
-`library(catkern)`
-
-`cRBFmatrix <- clrRBF(soilDataRaw[-89,])`
-
-Plotting the kernel PCA: 
-
-`cplot(cRBFmatrix,y=soilMetaData$ph[-89], col=c("aquamarine2","orchid3"),title = "Soil - Aitchison RBF kPCA",legend = TRUE)`
-
-A gradient from more acid (greenish) soils to more basic (violet) soils can be observed.
-
-We can also try the non-compositional kernels like quantitative Jaccard:
-
-We first perform a Cumulative Sum Scaling normalisation (CSS):
-
-`soilData <- CSSnorm(data=t(soilDataRaw[-89,]))`
-
-`Jmatrix <- qJacc(soilData)`
-
-`cplot(Jmatrix,y=soilMetaData$ph[-89], col=c("aquamarine2","orchid3"),title = "Soil - Ruzicka kPCA",legend = TRUE)`
-
-or with weights:
-
-`wJmatrix <- wqJacc(soilData,y=soilMetaData$ph[-89])`
-
-`cplot(wJmatrix,y=soilMetaData$ph[-89], col=c("aquamarine2","orchid3"),title = "Soil - weighted Ruzicka kPCA",legend = TRUE)`
+`kernPCA(soilDataRaw[-89,],kernel="cRBF", H=0.0001,y=soilMetaData$ph[-89], col=c("aquamarine2","orchid3"),title = "Soil kernel PCA",legend = TRUE)`
 
 
 ### Clustering
 
 To perform a hierarchical clustering:
 
-`rownames(cRBFmatrix) <- soilMetaData$ph[-89]`
-
-`distances <- as.dist(1-cRBFmatrix)`
-
-`clustering <- hclust(distances,method = "ward.D2")`
-
-Plotting the dendogram: 
-
-`plot(clustering)`
-
-`clusters <- cutree(clustering, k = 3)`
-
-Three different colors to represent acid pH, "intermediate" pH and basic pH: 
-
-`rect.hclust(clustering , k = 3, border = c("aquamarine2", "orchid3","azure3"))`
+`hklust(soilDataRaw[-89,],kernel="cRBF", title = "Soil data cluster dendogram",cut=3,colors=2:4)`
 
 
 ### SVM regression 
