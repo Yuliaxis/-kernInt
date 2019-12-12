@@ -38,6 +38,7 @@ KInt <- function(data,coeff) {
 #' @param DATA A list of the *m* data to fuse
 #' @param kernels A vector of length *m* with the kernels to use in each data
 #' @param y Only if "wqJac" is chosen: response variable
+#' @param w Only if "wqJac" is chosen: variable weights
 #' @param h Kernel hyperparameter (gamma)
 #' @param coeff A vector of length *m* with the weight of each kernel data,
 #' or length(m) - 1 if the last coefficient is 1 - sum(coeff).
@@ -52,8 +53,8 @@ KInt <- function(data,coeff) {
 #' @export
 #'
 
-fuseData <- function(DATA,coeff,kernels,y,h=NULL) {
-  Kmatrix <- seqEval(DATA=DATA,kernels=kernels,y=y,h=h)
+fuseData <- function(DATA,coeff,kernels,w=NULL,y=NULL,h=NULL) {
+  Kmatrix <- seqEval(DATA=DATA,kernels=kernels,y=y,w=w,h=h)
   m <- length(DATA)
 
   if(hasArg(coeff)) {

@@ -155,14 +155,13 @@ RBF <- function(data,h=NULL) {
 
 #Kernel selection
 #' @keywords internal
-kernelSelect <- function(kernel,data,y,h=NULL) { #h és un hiperparàmetre
+kernelSelect <- function(kernel,data,w=NULL,y=NULL,h=NULL) { #h és un hiperparàmetre
   if(kernel == "qJac") {
     cat("quantJaccard kernel\n")
     return(qJacc(data,h))
   } else if(kernel == "wqJac") {
     cat("quantJaccard kernel + weights \n")
-    print(y)
-    return(wqJacc(data=data,y=y,h=h))
+    return(wqJacc(data=data,w=w,h=h))
   }  else if(kernel == "cRBF") {
     cat("clr + RBF \n")
     return(clrRBF(data=data,h=h))
@@ -190,20 +189,20 @@ kernelSelect <- function(kernel,data,y,h=NULL) { #h és un hiperparàmetre
 # Kernel computing for different types of data
 #' @keywords internal
 
-seqEval <- function(DATA,kernels,y,h) UseMethod("seqEval",DATA)
+seqEval <- function(DATA,kernels,y,w,h) UseMethod("seqEval",DATA)
 
-seqEval.array <- function(DATA,kernels,y,h=NULL) {
+seqEval.array <- function(DATA,kernels,y=NULL,w=NULL,h=NULL) {
   m <- dim(DATA)[3]
   n <- nrow(DATA[,,1])
   K <- array(0,dim=c(n,n,m))
-  for(i in 1:m) K[,,i] <- kernelSelect(data = DATA[,,i],  kernel = kernels[i],h=h[i])
+  for(i in 1:m) K[,,i] <- kernelSelect(data = DATA[,,i],  kernel = kernels[i],w=w[[i]], h=h[i])
   return(K)
 }
-seqEval.list <- function(DATA,kernels,y,h=NULL) {
+seqEval.list <- function(DATA,kernels,y=NULL,w=NULL,h=NULL) {
   m <- length(DATA)
   n <- nrow(DATA[[1]])
   K <- array(0,dim=c(n,n,m))
-  for(i in 1:m) K[,,i] <- kernelSelect(data = DATA[[i]],  kernel = kernels[i],h=h[i])
+  for(i in 1:m) K[,,i] <- kernelSelect(data = DATA[[i]],  kernel = kernels[i],w=w[[i]],h=h[i])
   return(K)
 }
 

@@ -61,12 +61,14 @@ regress <- function(data, y, coeff,  kernel, p=0.8, C=1, H=NULL, E=0.1, k) {
 
   # 2. Compute kernel matrix
 
+  wKern <- compuKerWei(data=data, train=learn.indexes, y=y[learn.indexes], kernel=kernel)
+
   if(m>1) {
-    Jmatrix  <- seqEval(DATA=data, y=y, kernels=kernel,h=NULL) ## Sense especificar hiperparàmetre.
+    Jmatrix  <- seqEval(DATA=data, w=wKern, kernels=kernel,h=NULL) ## Sense especificar hiperparàmetre.
     trMatrix <- Jmatrix[learn.indexes,learn.indexes,]
     teMatrix <- Jmatrix[test.indexes,learn.indexes,]
   } else {
-    Jmatrix <- kernelSelect(kernel=kernel,data=data,y=y,h=NULL)
+    Jmatrix <- kernelSelect(kernel=kernel,w=wKern, data=data ,h=NULL)
     trMatrix <- Jmatrix[learn.indexes,learn.indexes]
     teMatrix <- Jmatrix[test.indexes,learn.indexes]
   }

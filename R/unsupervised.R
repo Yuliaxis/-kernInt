@@ -24,13 +24,13 @@
 
 hklust <- function(data, kernel="linear", H=NULL, method="ward.D2", plot=TRUE, labels=NULL, title=NULL, cut=NULL, height=NULL, colors="black") {
   kMatrix <- kernelSelect(data=data, kernel=kernel, h=H)
-  distances <- as.dist(1-kMatrix)
-  clustering <- hclust(distances,method = method)
+  distances <- stats::as.dist(1-kMatrix)
+  clustering <- stats::hclust(distances,method = method)
   if(plot) {
    plot(clustering,main=title)
     if(!is.null(cut) || !is.null(height)) {
-      clusters <- cutree(clustering, h = height, k = cut)
-      rect.hclust(clustering , k = cut, h = height, border = colors)
+      clusters <- stats::cutree(clustering, h = height, k = cut)
+      stats::rect.hclust(clustering , k = cut, h = height, border = colors)
     }
   }
   return(clustering)
@@ -59,6 +59,7 @@ hklust <- function(data, kernel="linear", H=NULL, method="ward.D2", plot=TRUE, l
 
 kernPCA <- function(data, kernel, H=NULL, y, dim=c(1,2), colors, na.col="grey70", title, legend = TRUE, labels=FALSE) {
   kMatrix <- kernelSelect(data=data, kernel=kernel, h=H)
-  return(cplot(matrix=kMatrix, y=y, dim=dim, col=colors, na.col=na.col, title=title, legend = legend, labels=labels))
+  plot <- cplot(matrix=kMatrix, y=y, dim=dim, col=colors, na.col=na.col, title=title, legend = legend, labels=labels)
+  return(plot)
 }
 

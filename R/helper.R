@@ -92,10 +92,59 @@ longTRTE  <- function(data,p) { ## ara mateix agafa una sessió a l'atzar. es po
   return(list(li=learn.indexes,ti=test.indexes))
 }
 
+## Kernel matrices with weights
+#' @keywords internal
+#' @importFrom catkern rfweight
+
+compuKerWei <- function(data, train, y, kernel) UseMethod("compuKerWei",data)
+
+compuKerWei.array <- function(data, train, y, kernel) {
+  indw <- grep("w",kernel)
+  if(sum(indw)>0) {
+    w <- vector("list", dim(data)[3])
+    for(i in indw) {
+      w <- rfweight(x=data[train,,i],y=y,plot=FALSE)
+      w <- as.vector(w)
+      # names(w) <- colnames(data[,,i])
+      w[[i]] <- w
+    }
+    return(w)
+  } else {
+    return(NULL)
+  }
+}
+
+compuKerWei.list <- function(data, train, y, kernel) {
+
+  indw <- grep("w",kernel)
+  if(sum(indw)>0) {
+    w <- vector("list", length(data))
+    for(i in indw) {
+      w[[i]] <- rfweight(x=data[[i]][train,],y=y,plot=FALSE)
+      w[[i]] <- as.vector(w[[i]])
+      # names(w) <- colnames(data[[i]])
+      w[[i]] <- w}
+    return(w)
+  } else {
+    return(NULL)
+  }
+}
+
+compuKerWei.default <- function(data, train, y, kernel) {
+  data <- data[train,]
+  indw <- grep("w",kernel)
+  if(sum(indw)==1) {
+    w <- rfweight(x=data,y=y,plot=FALSE)
+    w <- as.vector(w)
+    # names(w) <- colnames(data)
+    return(w)
+  } else {
+    return(NULL)
+  }
+}
+
 # Class imbalance: data approach
 #' @keywords internal
-#
-#
 smote <- function(data=data, diagn=diagn, nlearn=nlearn, N=N, learn.indexes,test.indexes) {
   dades <- data[c(learn.indexes,test.indexes),]
   SobrDadesTr <- ubBalance(as.data.frame(dades[1:nlearn,]), diagn[1:nlearn], type="ubSMOTE", positive=2)

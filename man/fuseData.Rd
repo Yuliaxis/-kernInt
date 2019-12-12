@@ -4,7 +4,7 @@
 \alias{fuseData}
 \title{Fuse Data}
 \usage{
-fuseData(DATA, coeff, kernels, y, h = NULL)
+fuseData(DATA, coeff, kernels, w = NULL, y = NULL, h = NULL)
 }
 \arguments{
 \item{DATA}{A list of the *m* data to fuse}
@@ -14,6 +14,8 @@ or length(m) - 1 if the last coefficient is 1 - sum(coeff).
 If absent,  all data is considered equally important.}
 
 \item{kernels}{A vector of length *m* with the kernels to use in each data}
+
+\item{w}{Only if "wqJac" is chosen: variable weights}
 
 \item{y}{Only if "wqJac" is chosen: response variable}
 
