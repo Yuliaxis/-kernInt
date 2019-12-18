@@ -31,7 +31,8 @@
 #' @param prob if TRUE class probabilities (soft-classifier) are computed instead of a True-or-false assignation (hard-classifier)
 #' @param classimb "weights" to introduce class weights in the SVM algorithm and "data" to oversampling. If other arguments are provided nothing is done.
 #' @param type If classimb = "data", the procedure to data oversampling or undersampling ("ubOver","ubUnder" or "ubSMOTE")
-#' @param p Proportion of total data instances in the training set
+#' @param p The proportion of data reserved for the test set. Otherwise, a vector containing the indexes or the names of the rows for testing.
+#' @param plong Longitudinal
 #' @param k The k for the k-Cross Validation. Minimum k = 2. If no argument is provided cross-validation is not performed.
 #' @param C The cost. A vector with the possible costs (SVM hyperparameter) to evaluate via k-Cross-Val can be entered too.
 #' @param H Gamma hyperparameter. A vector with the possible values to chose the best one via k-Cross-Val can be entered.
@@ -57,7 +58,7 @@
 
 
 
-classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="ubOver", p=0.8, k, C=1, H=NULL, CUT=NULL) {
+classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="ubOver", p=0.2, plong, k, C=1, H=NULL, CUT=NULL) {
 
   # y class
   diagn <- as.factor(y)
@@ -77,14 +78,25 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
   }
 
   # 1. TR/TE
-  # if("time2" %in% kernel || "time" %in% kernel ) {
-  # print("Longitudinal")
-  # index <- longTRTE(data,p)
-  # } else {
-    index <- finalTRTE(data,p) ## data és una matriu en aquest cas. passar-ho a MKL.
-  # }
-  learn.indexes <- index$li
-  test.indexes <- index$ti
+  if(length(p) == 1 & (p < 1)) { ### p és sa proporció de test.
+    if(p<=0) stop("A test partition is mandatory")
+    if(hasArg(plong)) {
+      print("Longitudinal")
+      index <- longTRTE(data,plong)
+    } else {
+      index <- finalTRTE(data,1-p)
+    }
+    learn.indexes <- index$li
+    test.indexes <- index$ti
+  } else {                #### els índexs de test són entrats de forma manual
+    if(class(p)=="character") {
+      test.indexes <- which(rownames(data) %in% p)
+    } else {
+      test.indexes <- p
+    }
+    learn.indexes <- (1:nrow(data))[-test.indexes]
+  }
+
 
   # if(type=="ubSMOTE") {
   #   if(classimb=="data" && !("matrix" %in% kernel)) {
@@ -152,12 +164,18 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
   } else {
     if(length(C)>1) paste("C > 1 and no k provided - Only the first element will be used")
     cost <- C[1]
+    bh <- cbind(cost)
     # if(length(H)>1) paste("H > 1 and no k provided- Only the first element will be used")
     if(!is.null(CUT) && length(CUT)>1) {
       paste("CUT > 1 and no k provided - Only the first element will be used")
       CUT <- CUT[1]
+      bh <- cbind(bh,CUT)
     }
-    if(!is.null(H)) H <- kernHelp(H)$hyp
+    if(!is.null(H))  {
+      H <- kernHelp(H)$hyp
+      bh <- cbind(bh,H)
+    }
+    if(hasArg(coeff))  bh <- cbind(bh,coeff)
   }
 
   if(m>1) {
@@ -196,6 +214,8 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
 
   ### Confusion matrix
   ct <- table(Truth=tey, Pred=pred)
-  return(ct)
+  names(pred) <- "predicted"
+
+  return(list("conf.matrix"=ct,"hyperparam"=bh,"prediction"=pred))
 }
 

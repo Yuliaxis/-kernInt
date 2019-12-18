@@ -4,8 +4,7 @@
 #'
 #' @param data A three-dimensional ({n·d·m}) array containing {m} kernel matrices
 #' @param coeff A vector of length {m} with the weight of each kernel matrix
-#' If absent, the mean of all matrices is computed instead.
-#' @return A consensus kernel matrix
+#' @return A kernel matrix
 #' @examples
 #' DATA <- array(dim=c(4,4,3))
 #' DATA[,,1] <- matrix(abs(rnorm(16)),nrow=4,ncol=4)
@@ -16,19 +15,28 @@
 #' diag(DATA[,,3]) <- 1
 #' KInt(data=DATA)
 #' KInt(data=DATA,coeff=c(0.5,0.3,0.2))
+#'
 #' @export
 
 
 KInt <- function(data,coeff) {
-  data[which(is.na(data))] <- 0
-  d <- aperm(data,c(3,1,2))
-  if(hasArg(coeff)) {
-    if(dim(d)[1] != length(coeff)) stop("Length of the coefficients vector different to the number of matrices")
+
+    d <- aperm(data,c(3,1,2))
+    if(!hasArg(coeff))coeff <- rep(1/nrow(d),nrow(d))
+    if(dim(d)[1] != length(coeff)) stop("Length of the coefficients
+                                        vector different to the number of matrices")
     if(sum(coeff) != 1) coeff <- coeff / sum(coeff)
     IntMatrix <-  colSums(coeff*d)
-  } else {
-    IntMatrix <-  colMeans(d)
-  }
+
+  # } else if(coeff=="consensus") {
+  #   stop("falta")
+  # } else if(coeff=="full") {
+  #   stop("falta")
+  #
+  # } else if(coeff=="sparse") {
+  #   stop("falta")
+
+
   return(IntMatrix)
 }
 
@@ -56,12 +64,6 @@ KInt <- function(data,coeff) {
 fuseData <- function(DATA,coeff,kernels,w=NULL,y=NULL,h=NULL) {
   Kmatrix <- seqEval(DATA=DATA,kernels=kernels,y=y,w=w,h=h)
   m <- length(DATA)
-
-  if(hasArg(coeff)) {
-    print("Coeff")
-    if(length(coeff) == (m - 1) && coeff < 1) coeff <- c(coeff,1-coeff)
-    return(KInt(Kmatrix,coeff=coeff))
-  } else {
-    return(KInt(Kmatrix))
-  }
+  return(KInt(Kmatrix,coeff=coeff))
 }
+

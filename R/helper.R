@@ -77,16 +77,21 @@ finalTRTE  <- function(data,p) {
 }
 
 #' @keywords internal
-longTRTE  <- function(data,p) { ## ara mateix agafa una sessió a l'atzar. es pot fer que sempre agafi la mateixa amb una petita modificació
-  # period <- data[[1]]
-  # individuals <- data$IndividxVisits[1]
-  # total <- period*individuals
-  # test.indexes <- seq(from=period,to=total,by=period)
+longTRTE <- function(data,plong) {
   id <-ids(data)
   total <- length(id)
   id <- as.numeric(summary(id,maxsum=length(id)))
   help1 <- cumsum(id)-id[1]
-  spl <- sapply(id,function(x)sample(x,1))
+  if(plong=="random") {
+    spl <- sapply(id,function(x)sample(x,1))
+  } else {
+    if(length(plong) == 1) {
+      spl <- rep(plong,total)
+      }
+    else {
+      spl <- plong
+      }
+  }
   test.indexes <- help1 + spl
   learn.indexes <- (1:total)[-test.indexes]
   return(list(li=learn.indexes,ti=test.indexes))

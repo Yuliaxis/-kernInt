@@ -4,8 +4,8 @@
 \alias{regress}
 \title{SVM regression}
 \usage{
-regress(data, y, coeff, kernel, p = 0.8, C = 1, H = NULL, E = 0.1,
-  k)
+regress(data, y, coeff, kernel, p = 0.2, plong, C = 1, H = NULL,
+  E = 0.1, k)
 }
 \arguments{
 \item{data}{Input data: a matrix or data.frame with predictor variables. To perform MKL: a list of the *m* types of data to combine.}
@@ -18,7 +18,9 @@ different coefficient combinations to evaluate via k-CV. If absent, the same wei
 \item{kernel}{"linear" for linear kernel, cRBF" for clrRBF, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights.
 "matrix" if a pre-calculated kernel matrix is given as input. To perform MKL: Vector of *m* kernels to apply to each data type.}
 
-\item{p}{Proportion of total data instances in the training set}
+\item{p}{The proportion of data reserved for the test set. Otherwise, a vector containing the indexes or the names of the rows for testing.}
+
+\item{plong}{Longitudinal}
 
 \item{C}{A cost, or a vector with the possible costs to evaluate via k-Cross-Val.}
 

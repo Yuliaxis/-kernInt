@@ -9,11 +9,10 @@ KInt(data, coeff)
 \arguments{
 \item{data}{A three-dimensional ({n·d·m}) array containing {m} kernel matrices}
 
-\item{coeff}{A vector of length {m} with the weight of each kernel matrix
-If absent, the mean of all matrices is computed instead.}
+\item{coeff}{A vector of length {m} with the weight of each kernel matrix}
 }
 \value{
-A consensus kernel matrix
+A kernel matrix
 }
 \description{
 Kernel Matrix Integration
@@ -28,4 +27,5 @@ DATA[,,3] <- matrix(abs(rnorm(16)),nrow=4,ncol=4)
 diag(DATA[,,3]) <- 1
 KInt(data=DATA)
 KInt(data=DATA,coeff=c(0.5,0.3,0.2))
+
 }

@@ -4,10 +4,12 @@
 \alias{Prec}
 \title{Precision}
 \usage{
-Prec(ct)
+Prec(ct, min.class = 2)
 }
 \arguments{
 \item{ct}{Confusion Matrix}
+
+\item{min.class}{Minority class}
 }
 \value{
 Precision
@@ -19,5 +21,5 @@ Precision
 diag <- as.numeric(speMGX[,1])
 diag[diag == 3] <- 1  # De 3 a 2 classes: No Malalt /  malalt
 CM <- classify(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac")
-Prec(CM)
+Prec(CM$"conf.matrix")
 }

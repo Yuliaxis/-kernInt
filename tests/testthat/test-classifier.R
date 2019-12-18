@@ -2,6 +2,7 @@ context("Classification procedure")
 
 test_that("Classification output is formally correct (i.e. confusion table)", {
   formal_out <- function(result) {
+    result <- result$"conf.matrix"
     expect_is(result,"table")
     expect_equal(dim(result),c(2,2))
     expect_true(!is.null(rownames(result)))

@@ -4,10 +4,12 @@
 \alias{F1}
 \title{F1}
 \usage{
-F1(ct)
+F1(ct, min.class = 2)
 }
 \arguments{
 \item{ct}{Confusion Matrix}
+
+\item{min.class}{Minority class}
 }
 \value{
 F1
@@ -19,5 +21,5 @@ F1
 diag <- as.numeric(speMGX[,1])
 diag[diag == 3] <- 1  # De 3 a 2 classes: No Malalt /  malalt
 CM <- classify(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac")
-F1(CM)
+F1(CM$"conf.matrix")
 }

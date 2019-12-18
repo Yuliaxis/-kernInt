@@ -5,7 +5,8 @@
 \title{SVM classifier}
 \usage{
 classify(data, y, coeff, kernel, prob = FALSE, classimb = "no",
-  type = "ubOver", p = 0.8, k, C = 1, H = NULL, CUT = NULL)
+  type = "ubOver", p = 0.2, plong, k, C = 1, H = NULL,
+  CUT = NULL)
 }
 \arguments{
 \item{data}{Input data: a matrix or data.frame with predictor variables. To perform MKL: a list of the *m* types of data to combine.}
@@ -24,7 +25,9 @@ different coefficient combinations to evaluate via k-CV. If absent, the same wei
 
 \item{type}{If classimb = "data", the procedure to data oversampling or undersampling ("ubOver","ubUnder" or "ubSMOTE")}
 
-\item{p}{Proportion of total data instances in the training set}
+\item{p}{The proportion of data reserved for the test set. Otherwise, a vector containing the indexes or the names of the rows for testing.}
+
+\item{plong}{Longitudinal}
 
 \item{k}{The k for the k-Cross Validation. Minimum k = 2. If no argument is provided cross-validation is not performed.}
 

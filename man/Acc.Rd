@@ -19,5 +19,5 @@ Accuracy
 diag <- as.numeric(speMGX[,1])
 diag[diag == 3] <- 1  # De 3 a 2 classes: No Malalt /  malalt
 CM <- classify(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac")
-Acc(CM)
+Acc(CM$"conf.matrix")
 }

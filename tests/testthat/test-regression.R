@@ -2,6 +2,7 @@ context("Regression procedure")
 
 test_that("Regression output is formally correct (i.e. NMSE)", {
   formal_out <- function(result) {
+    result <- result$"nmse"
     expect_is(result,"numeric")
     expect_equal(length(result),1)
     expect_true(result >=0 )

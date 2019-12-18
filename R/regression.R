@@ -15,7 +15,8 @@
 #' "matrix" if a pre-calculated kernel matrix is given as input. To perform MKL: Vector of *m* kernels to apply to each data type.
 #' @param coeff ONLY IN MKL CASE: A *t·m* matrix of the coefficients, where *m* are the number of different data types and *t* the number of
 #' different coefficient combinations to evaluate via k-CV. If absent, the same weight is given to all data sources.
-#' @param p Proportion of total data instances in the training set
+#' @param p The proportion of data reserved for the test set. Otherwise, a vector containing the indexes or the names of the rows for testing.
+#' @param plong Longitudinal
 #' @param C A cost, or a vector with the possible costs to evaluate via k-Cross-Val.
 #' @param H Gamma hyperparameter. A vector with the possible values to chose the best one via k-Cross-Val can be entered.
 #' For the MKL, a list with *m* entries can be entered, being' *m* is the number of different data types. Each element on the list
@@ -35,7 +36,7 @@
 #' @importFrom kernlab as.kernelMatrix kernelMatrix predict rbfdot SVindex
 #' @export
 
-regress <- function(data, y, coeff,  kernel, p=0.8, C=1, H=NULL, E=0.1, k) {
+regress <- function(data, y, coeff,  kernel, p=0.2, plong, C=1, H=NULL, E=0.1, k) {
 
   if(class(data) == "list") {
     m <- length(data)
@@ -49,16 +50,26 @@ regress <- function(data, y, coeff,  kernel, p=0.8, C=1, H=NULL, E=0.1, k) {
   } else {
     stop("Wrong input data class.")
   }
-  # 1. TR/TE
-  if("time2" %in% kernel || "time" %in% kernel ) {
-    print("Longitudinal")
-    index <- longTRTE(data,p)
-  } else {
-    index <- finalTRTE(data,p) ## data és una matriu en aquest cas. passar-ho a MKL.
-  }
-  learn.indexes <- index$li
-  test.indexes <- index$ti
 
+  # 1. TR/TE
+  if(length(p) == 1 & (p < 1)) { ### p és sa proporció de test.
+    if(p<=0) stop("A test partition is mandatory")
+    if(hasArg(plong)) {
+      print("Longitudinal")
+      index <- longTRTE(data,plong)
+    } else {
+      index <- finalTRTE(data,1-p)
+    }
+    learn.indexes <- index$li
+    test.indexes <- index$ti
+  } else {                #### els índexs de test són entrats de forma manual
+    if(class(p)=="character") {
+      test.indexes <- which(rownames(data) %in% p)
+    } else {
+      test.indexes <- p
+    }
+    learn.indexes <- (1:nrow(data))[-test.indexes]
+  }
   # 2. Compute kernel matrix
 
   wKern <- compuKerWei(data=data, train=learn.indexes, y=y[learn.indexes], kernel=kernel)
@@ -95,8 +106,14 @@ regress <- function(data, y, coeff,  kernel, p=0.8, C=1, H=NULL, E=0.1, k) {
     # if(length(H)>1) paste("H > 1 - Only the first element will be used")
     cost <- C[1]
     eps <- E[1]
-    if(!is.null(H)) H <- kernHelp(H)$hyp
+    bh <- cbind(cost,eps)
+    if(!is.null(H))  {
+      H <- kernHelp(H)$hyp
+      bh <- cbind(bh,H)
+    }
+    if(hasArg(coeff))  bh <- cbind(bh,coeff)
   }
+
 
   if(m>1) {
     for(j in 1:m) trMatrix[,,j] <- hyperkSelection(K=trMatrix[,,j], h=H[j],  kernel=kernel[j])
@@ -114,6 +131,9 @@ regress <- function(data, y, coeff,  kernel, p=0.8, C=1, H=NULL, E=0.1, k) {
   teMatrix <- teMatrix[,SVindex(model),drop=FALSE]
   teMatrix <- as.kernelMatrix(teMatrix)
   pred <- kernlab::predict(model,teMatrix)
-  return( error.norm(y[test.indexes],pred))
+  err <- error.norm(y[test.indexes],pred)
+  colnames(pred) <- "predicted"
+  return(list("nmse"=err,"hyperparam"=bh,"prediction"=pred))
+
 }
 

@@ -4,7 +4,7 @@
 \alias{outliers}
 \title{SVM outlier detection / one class SVM}
 \usage{
-outliers(data, y, kernel, nu, p = 0.8, k, H = NULL)
+outliers(data, y, kernel, nu, p = 0.2, k, H = NULL)
 }
 \arguments{
 \item{data}{Input data}

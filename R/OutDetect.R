@@ -35,7 +35,7 @@
 
 
 
-outliers <- function(data,y,kernel,nu,p=0.8,k,H=NULL) {
+outliers <- function(data,y,kernel,nu,p=0.2,k,H=NULL) {
 
   if(hasArg(y)) {
     y <- as.factor(y)
@@ -58,7 +58,7 @@ outliers <- function(data,y,kernel,nu,p=0.8,k,H=NULL) {
   Jmatrix <- kernelSelect(kernel,data,y,h=NULL)
 
   if(hasArg(y)){
-    index <- finalTRTE(data,p) ## data és una matriu en aquest cas. passar-ho a MKL.
+    index <- finalTRTE(data,1-p) ## data és una matriu en aquest cas. passar-ho a MKL.
     learn.indexes <- index$li
     test.indexes <- index$ti
 
