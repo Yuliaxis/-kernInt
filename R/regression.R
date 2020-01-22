@@ -36,7 +36,7 @@
 #' @importFrom kernlab as.kernelMatrix kernelMatrix predict rbfdot SVindex
 #' @export
 
-regress <- function(data, y, coeff,  kernel, p=0.2, plong, C=1, H=NULL, E=0.1, k) {
+regress <- function(data, y, coeff="mean",  kernel, p=0.2, plong, C=1, H=NULL, E=0.1, k) {
 
   if(class(data) == "list") {
     m <- length(data)
@@ -88,7 +88,15 @@ regress <- function(data, y, coeff,  kernel, p=0.2, plong, C=1, H=NULL, E=0.1, k
   if(hasArg(k)) {
     if(k<2) stop("k should be equal to or higher than 2")
     if(m>1)  {
-      if(!hasArg(coeff)) coeff <- rep(1/m,m)
+      if(class(coeff) == "character") {
+        if(coeff == "mean") {
+          coeff <- rep(1/m,m)
+        } else {
+          d <- aperm(trMatrix,c(3,1,2))
+          x <- lapply(seq_len(nrow(d)), function(i) d[i,,]) ## transformar en llista
+          coeff <- umkl(X=x,method=coeff,...)
+        }
+      }
       bh <- kCV.MKL(ARRAY=trMatrix, COEFF=coeff, KERNH=H, kernels=kernel, method="svr", COST = C,EPS = E,
                      Y=y[learn.indexes], k=k,  R=1)
       coeff <- bh$coeff ##indexs
@@ -111,7 +119,7 @@ regress <- function(data, y, coeff,  kernel, p=0.2, plong, C=1, H=NULL, E=0.1, k
       H <- kernHelp(H)$hyp
       bh <- cbind(bh,H)
     }
-    if(hasArg(coeff))  bh <- cbind(bh,coeff)
+    if(m>1)  bh <- cbind(bh,coeff)
   }
 
 

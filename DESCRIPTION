@@ -14,11 +14,13 @@ LazyData: true
 Depends: R(>= 3.4)
 Imports: 
     catkern,
+    corrplot,
     ggplot2,
     graphics,
     kernlab,
     metagenomeSeq,
     methods,
+    quadprog,
     robCompositions,
     ROSE,
     unbalanced

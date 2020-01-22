@@ -28,7 +28,7 @@ test_that("Regression output is formally correct (i.e. NMSE)", {
   formal_out(regress(data=grKern[c(1,3,4,5)], y=growth[,2], coeff=w, kernel=c("matrix","matrix","matrix","matrix"), C=c(0.1,1),k=5))
 
   ## Type B:  predim l'altària d'un individu ja conegut en una visita X desconeguda.
-  formal_out(regress(data=grKern[c(1,3,4,5)], y=growth[,2], coeff=c(0.33,0.33,0.17,0.17), kernel=c("matrix","matrix","matrix","time2"), C=1))
+  formal_out(regress(data=grKern[c(1,3,4,5)], y=growth[,2], plong="random", coeff=c(0.33,0.33,0.17,0.17), kernel=c("matrix","matrix","matrix","time2"), C=1))
 
   #KERNEL != MATRIX
 
@@ -55,6 +55,6 @@ test_that("Regression output is formally correct (i.e. NMSE)", {
 
   ##### Type B:  predim l'altària d'un individu ja conegut en una visita X desconeguda.
 
-  regress(data=grKern[c(1,3:5)], y=growth[,2], coeff=c(0.33,0.33,0.17,0.17), kernel=c("matrix","matrix","cov","time"), C=0.1)
+  regress(data=grKern[c(1,3:5)], y=growth[,2], plong="random",coeff=c(0.33,0.33,0.17,0.17), kernel=c("matrix","matrix","cov","time"), C=0.1)
 
   })

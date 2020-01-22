@@ -142,7 +142,7 @@ Linear <- function(data) {
   return(K)
 }
 
-#Kernel selection
+# RBF Kernel
 #' @keywords internal
 RBF <- function(data,h=NULL) {
   N <- nrow(data)
@@ -150,6 +150,39 @@ RBF <- function(data,h=NULL) {
   dd <- diag(kk)
   K <- 2*kk-matrix(dd,N,N)-t(matrix(dd,N,N))
   if(!is.null(h) && h != 0 ) K <- exp(h*K) #RBF
+  return(K)
+}
+
+# Fisher kernel from Poisson distribution
+#' @keywords internal
+
+FisherPoisson <- function(data) {
+  # Generate subdata
+  k <- summary(as.factor(rownames(data)),maxsum=nrow(data))
+  if(!identical(names(K),unique(rownames(data)))) stop("Please check the data rownames")
+  # subs <- cumsum(subs)-subs+1
+  names <- unique(rownames(data))
+  subdata <- lapply(names, function(i){
+    ids <- which(rownames(data) == i)
+   (data)[ids,]
+  })
+
+  # Log-likelihood Gradients:  sum(xik/li - 1) -> i/li * sum(xik) - K
+  #Obtain vector of lambda
+
+  Ls <- matrix(rep(colMeans(data),length(names)),ncol=ncol(data),byrow = TRUE)
+  Nums <- sapply(subdata,colSums,simplify="array")
+  Nums <- t(Nums)
+
+  Q <- Nums/Ls
+  rownames(Q) <- names
+  K <- matrix(rep(k,ncol(data)),ncol=ncol(data))
+  gradPoisson <- Q - K
+  gradPoisson[is.na(gradPoisson)] <- 0
+  # Obtenim matriu on cada fila és es gradPoisson per a 1 individus:
+  K <- tcrossprod(gradPoisson)
+  D <- diag(1/sqrt(diag(K)))
+  K <- D %*% K %*% D
   return(K)
 }
 

@@ -4,8 +4,8 @@
 \alias{regress}
 \title{SVM regression}
 \usage{
-regress(data, y, coeff, kernel, p = 0.2, plong, C = 1, H = NULL,
-  E = 0.1, k)
+regress(data, y, coeff = "mean", kernel, p = 0.2, plong, C = 1,
+  H = NULL, E = 0.1, k)
 }
 \arguments{
 \item{data}{Input data: a matrix or data.frame with predictor variables. To perform MKL: a list of the *m* types of data to combine.}

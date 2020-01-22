@@ -4,7 +4,8 @@
 \alias{fuseData}
 \title{Fuse Data}
 \usage{
-fuseData(DATA, coeff, kernels, w = NULL, y = NULL, h = NULL)
+fuseData(DATA, coeff = "mean", kernels, w = NULL, y = NULL,
+  h = NULL)
 }
 \arguments{
 \item{DATA}{A list of the *m* data to fuse}

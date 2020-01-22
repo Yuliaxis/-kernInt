@@ -4,7 +4,7 @@
 \alias{KInt}
 \title{Kernel Matrix Integration}
 \usage{
-KInt(data, coeff)
+KInt(data, coeff = "mean", ...)
 }
 \arguments{
 \item{data}{A three-dimensional ({n·d·m}) array containing {m} kernel matrices}

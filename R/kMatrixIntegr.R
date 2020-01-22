@@ -19,27 +19,23 @@
 #' @export
 
 
-KInt <- function(data,coeff) {
+KInt <- function(data,coeff="mean",...) {
 
-    d <- aperm(data,c(3,1,2))
-    if(!hasArg(coeff))coeff <- rep(1/nrow(d),nrow(d))
-    if(dim(d)[1] != length(coeff)) stop("Length of the coefficients
+  d <- aperm(data,c(3,1,2))
+
+  if(class(coeff)!="numeric") {
+    if(coeff=="mean") {
+      return(colMeans(d))
+    } else {
+      x <- lapply(seq_len(nrow(d)), function(i) d[i,,]) ## transformar en llista
+      coeff <- umkl(X=x,method=coeff,...)
+    }
+  }
+  if(dim(d)[1] != length(coeff)) stop("Length of the coefficients
                                         vector different to the number of matrices")
-    if(sum(coeff) != 1) coeff <- coeff / sum(coeff)
-    IntMatrix <-  colSums(coeff*d)
-
-  # } else if(coeff=="consensus") {
-  #   stop("falta")
-  # } else if(coeff=="full") {
-  #   stop("falta")
-  #
-  # } else if(coeff=="sparse") {
-  #   stop("falta")
-
-
-  return(IntMatrix)
+  if(sum(coeff) != 1) coeff <- coeff / sum(coeff)
+  return(colSums(coeff*d))
 }
-
 
 #' Fuse Data
 #'
@@ -61,7 +57,7 @@ KInt <- function(data,coeff) {
 #' @export
 #'
 
-fuseData <- function(DATA,coeff,kernels,w=NULL,y=NULL,h=NULL) {
+fuseData <- function(DATA,coeff="mean",kernels,w=NULL,y=NULL,h=NULL) {
   Kmatrix <- seqEval(DATA=DATA,kernels=kernels,y=y,w=w,h=h)
   m <- length(DATA)
   return(KInt(Kmatrix,coeff=coeff))

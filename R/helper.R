@@ -80,16 +80,16 @@ finalTRTE  <- function(data,p) {
 longTRTE <- function(data,plong) {
   id <-ids(data)
   total <- length(id)
-  id <- as.numeric(summary(id,maxsum=length(id)))
-  help1 <- cumsum(id)-id[1]
+  id <- as.numeric(summary(id,maxsum=length(id))[unique(id)])
+  help1 <- cumsum(id)-id
   if(plong=="random") {
-    spl <- sapply(id,function(x)sample(x,1))
+    spl <- sapply(id,function(x)sample(x,1)) # test a l'atzar
   } else {
     if(length(plong) == 1) {
-      spl <- rep(plong,total)
+      spl <- rep(plong,length(id)) # la mateixa mostra per a tots els individus
       }
     else {
-      spl <- plong
+      spl <- plong  ## si volem indicar una mostra específica per individu per usar de test
       }
   }
   test.indexes <- help1 + spl

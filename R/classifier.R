@@ -58,7 +58,7 @@
 
 
 
-classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="ubOver", p=0.2, plong, k, C=1, H=NULL, CUT=NULL) {
+classify <- function(data, y, coeff="mean", kernel,  prob=FALSE, classimb="no", type="ubOver", p=0.2, plong, k, C=1, H=NULL, CUT=NULL) {
 
   # y class
   diagn <- as.factor(y)
@@ -128,7 +128,6 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
     teMatrix <- Jmatrix[test.indexes,learn.indexes]
   }
 
-
   # 3. Data imbalance
   if(classimb == "weights") {
     wei <- c("1"=as.numeric(summary(try)[2]),"2"=as.numeric(summary(try)[1]))
@@ -148,7 +147,15 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
   if(hasArg(k)) {
     if(k<2) stop("k should be equal to or higher than 2")
     if(m>1)  {
-      if(!hasArg(coeff)) coeff <- rep(1/m,m)
+      if(class(coeff) == "character") {
+        if(coeff == "mean") {
+          coeff <- rep(1/m,m)
+        } else {
+          d <- aperm(trMatrix,c(3,1,2))
+          x <- lapply(seq_len(nrow(d)), function(i) d[i,,]) ## transformar en llista
+          coeff <- umkl(X=x,method=coeff,...)
+        }
+      }
       bh <- kCV.MKL(ARRAY=trMatrix, COEFF=coeff, KERNH=H, kernels=kernel, method="svc", COST = C,
                     CUT=CUT, Y=try, k=k,  prob=prob, R=k,classimb=wei)
       coeff <- bh$coeff ##indexs
@@ -175,7 +182,7 @@ classify <- function(data, y, coeff, kernel,  prob=FALSE, classimb="no", type="u
       H <- kernHelp(H)$hyp
       bh <- cbind(bh,H)
     }
-    if(hasArg(coeff))  bh <- cbind(bh,coeff)
+    if(m>1)  bh <- cbind(bh,coeff)
   }
 
   if(m>1) {
