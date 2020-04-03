@@ -4,22 +4,37 @@
 \alias{hklust}
 \title{Hierarchical clustering}
 \usage{
-hklust(data, kernel = "linear", H = NULL, method = "ward.D2",
-  plot = TRUE, labels = NULL, title = NULL, cut = NULL,
-  height = NULL, colors = "black")
+hklust(
+  data,
+  comb = "mean",
+  kernel,
+  H = NULL,
+  domain = NULL,
+  method = "ward.D2",
+  plot = TRUE,
+  labels = NULL,
+  title = NULL,
+  cut = NULL,
+  height = NULL,
+  colors = "black"
+)
 }
 \arguments{
-\item{data}{Input data: a matrix or data.frame.}
+\item{data}{Input data}
+
+\item{comb}{If data is a list or array: how to combine them ("mean","statis","full","sparse" or a vector of coefficients)}
 
 \item{kernel}{"linear" for linear kernel, "rbf" for RBF, "cRBF" for clrRBF, "qJac" for quantitative Jaccard.
 "matrix" if a pre-calculated kernel matrix is given as input.}
 
-\item{H}{Kernel hyperparameter.}
+\item{H}{Kernel gamma hyperparameter if needed (only RBF-like kernels)}
+
+\item{domain}{Only used in "frbf" or "flin".}
 
 \item{method}{the agglomeration method to be used: "ward.D", "ward.D2" (Ward's (1963) clustering criterion),
 "single", "complete", "average" (= UPGMA), "mcquitty" (= WPGMA), "median" (= WPGMC) or "centroid" (= UPGMC).}
 
-\item{plot}{TRUE to return the plot}
+\item{plot}{TRUE to return the plot, FALSE to return the dendogram object}
 
 \item{labels}{A vector of labels for the leaves of the tree. Row names of
 the input data are used by default. If set to FALSE, no labels at all are plotted.}
@@ -39,5 +54,5 @@ An object of class hclust with or without a plot of the cluster dendogram
 Hierarchical clustering
 }
 \examples{
-hklust(soilDataRaw[-89,],kernel="cRBF", title = "Soil data cluster dendogram",cut=3,colors=2:4)
+hklust(soil$abund,kernel="jac", title = "Soil data cluster dendogram",cut=3,colors=2:4)
 }

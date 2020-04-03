@@ -4,40 +4,49 @@
 \alias{classify}
 \title{SVM classifier}
 \usage{
-classify(data, y, coeff = "mean", kernel, prob = FALSE,
-  classimb = "no", type = "ubOver", p = 0.2, plong, k, C = 1,
-  H = NULL, CUT = NULL)
+classify(
+  data,
+  y,
+  coeff = "mean",
+  kernel,
+  prob = FALSE,
+  classimb,
+  p = 0.2,
+  k,
+  C = 1,
+  H = NULL,
+  domain = NULL
+)
 }
 \arguments{
-\item{data}{Input data: a matrix or data.frame with predictor variables. To perform MKL: a list of the *m* types of data to combine.}
+\item{data}{Input data: a matrix or data.frame with predictor variables/features as columns.
+To perform MKL: a list of *m* datasets. All datasets should have the same number of rows.}
 
-\item{y}{Reponse variable (binary)}
+\item{y}{Reponse variable (factor)}
 
 \item{coeff}{ONLY IN MKL CASE: A *t·m* matrix of the coefficients, where *m* are the number of different data types and *t* the number of
 different coefficient combinations to evaluate via k-CV. If absent, the same weight is given to all data sources.}
 
-\item{kernel}{"cRBF" for clrRBF, "qJac" for quantitative Jaccard,  "wqJac" for quantitative Jaccard with weights.
-"matrix" if a pre-calculated kernel matrix is given as input. To perform MKL: Vector of *m* kernels to apply to each data type.}
+\item{kernel}{"lin" or rbf" to standard Linear and RBF kernels. "clin" for compositional linear and "crbf" for Aitchison-RBF
+kernels. "jac" for quantitative Jaccard / Ruzicka kernel. "jsk" for Jensen-Shannon Kernel. "flin" and "frbf" for functional linear
+and functional RBF kernels. "matrix" if a pre-computed kernel matrix is given as input.
+To perform MKL: Vector of *m* kernels to apply to each dataset.}
 
 \item{prob}{if TRUE class probabilities (soft-classifier) are computed instead of a True-or-false assignation (hard-classifier)}
 
-\item{classimb}{"weights" to introduce class weights in the SVM algorithm and "data" to oversampling. If other arguments are provided nothing is done.}
-
-\item{type}{If classimb = "data", the procedure to data oversampling or undersampling ("ubOver","ubUnder" or "ubSMOTE")}
+\item{classimb}{"weights" to introduce class weights in the SVM algorithm, "ubOver" to oversampling and "ubUnder" to undersample.}
 
 \item{p}{The proportion of data reserved for the test set. Otherwise, a vector containing the indexes or the names of the rows for testing.}
-
-\item{plong}{Longitudinal}
 
 \item{k}{The k for the k-Cross Validation. Minimum k = 2. If no argument is provided cross-validation is not performed.}
 
 \item{C}{The cost. A vector with the possible costs (SVM hyperparameter) to evaluate via k-Cross-Val can be entered too.}
 
-\item{H}{Gamma hyperparameter. A vector with the possible values to chose the best one via k-Cross-Val can be entered.
+\item{H}{Gamma hyperparameter (only in RBF-like functions). A vector with the possible values to chose the best one via k-Cross-Val can be entered.
 For the MKL, a list with *m* entries can be entered, being' *m* is the number of different data types. Each element on the list
 must be a number or, if k-Cross-Validation is needed, a vector with the hyperparameters to evaluate for each data type.}
 
-\item{CUT}{Cut-off if prob = TRUE. If CUT is a vector, the best cut-off can be obtained via cross-validation.}
+\item{domain}{Only used in "frbf" or "flin".}
 }
 \value{
 Confusion matrix or, if prob = TRUE and not cutoff is set, a data.frame with the class probability and the actual class.
@@ -65,15 +74,5 @@ or to test the model, but not for both, thus preserving the independance between
 Currently, the classification can be only performed if the target variable is binary (two classes).
 }
 \examples{
-#Preparing the target variable:
-diag <- as.numeric(speMGX[,1])
-diag[diag == 3] <- 1  # 3 classes to 2: Disease (1) /  no Disease (2)
-# Classification with 10-Cross-Validation
-classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",C=c(0.1,1),k=10)
-# Probabilistic Classification with no cross-validation:
-classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="wqJac",prob = TRUE)
-# Classification (with 10-CV) accounting for the imbalanced data: an example of data resampling
-classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",classimb="data",type="ubUnder",C=c(0.001,0.01),k=10)
-# Classification (with 10-CV) accounting for the imbalanced data: class weighting
-classify(data=speMGX[,7:ncol(speMGX)],diag,kernel="qJac",classimb="weights",C=c(0.001,0.01),k=10)
+classify(data=soil$abund ,y=soil$metadata[ ,"env_feature"],kernel="clin")
 }

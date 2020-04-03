@@ -41,8 +41,6 @@ KInt <- function(data,coeff="mean",...) {
 #'
 #' @param DATA A list of the *m* data to fuse
 #' @param kernels A vector of length *m* with the kernels to use in each data
-#' @param y Only if "wqJac" is chosen: response variable
-#' @param w Only if "wqJac" is chosen: variable weights
 #' @param h Kernel hyperparameter (gamma)
 #' @param coeff A vector of length *m* with the weight of each kernel data,
 #' or length(m) - 1 if the last coefficient is 1 - sum(coeff).
@@ -52,13 +50,13 @@ KInt <- function(data,coeff="mean",...) {
 #' d <- list()
 #' d[[1]] <- matrix(abs(rnorm(20)),nrow=4,ncol=5)
 #' d[[2]] <- matrix(abs(rnorm(20)),nrow=4,ncol=5)
-#' fuseData(DATA=d,kernel=c("qJac","cRBF"))
-#' fuseData(DATA=d,kernel=c("qJac","cRBF"),coeff=c(0.9,0.1))
+#' fuseData(DATA=d,kernel=c("jac","crbf"))
+#' fuseData(DATA=d,kernel=c("jac","crbf"),coeff=c(0.9,0.1))
 #' @export
 #'
 
-fuseData <- function(DATA,coeff="mean",kernels,w=NULL,y=NULL,h=NULL) {
-  Kmatrix <- seqEval(DATA=DATA,kernels=kernels,y=y,w=w,h=h)
+fuseData <- function(DATA,coeff="mean",kernels, h=NULL) {
+  Kmatrix <- seqEval(DATA=DATA,kernels=kernels,h=h)
   m <- length(DATA)
   return(KInt(Kmatrix,coeff=coeff))
 }

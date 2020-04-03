@@ -4,31 +4,44 @@
 \alias{regress}
 \title{SVM regression}
 \usage{
-regress(data, y, coeff = "mean", kernel, p = 0.2, plong, C = 1,
-  H = NULL, E = 0.1, k)
+regress(
+  data,
+  y,
+  coeff = "mean",
+  kernel,
+  p = 0.2,
+  C = 1,
+  H = NULL,
+  E = 0.01,
+  domain = NULL,
+  k
+)
 }
 \arguments{
-\item{data}{Input data: a matrix or data.frame with predictor variables. To perform MKL: a list of the *m* types of data to combine.}
+\item{data}{Input data: a matrix or data.frame with predictor variables/features as columns.
+To perform MKL: a list of *m* datasets. All datasets should have the same number of rows}
 
 \item{y}{Reponse variable (continuous)}
 
 \item{coeff}{ONLY IN MKL CASE: A *t·m* matrix of the coefficients, where *m* are the number of different data types and *t* the number of
 different coefficient combinations to evaluate via k-CV. If absent, the same weight is given to all data sources.}
 
-\item{kernel}{"linear" for linear kernel, cRBF" for clrRBF, "qJac" for quantitative Jaccard and  "wqJacc" for quantitative Jaccard with weights.
-"matrix" if a pre-calculated kernel matrix is given as input. To perform MKL: Vector of *m* kernels to apply to each data type.}
+\item{kernel}{"lin" or rbf" to standard Linear and RBF kernels. "clin" for compositional linear and "crbf" for Aitchison-RBF
+kernels. "jac" for quantitative Jaccard / Ruzicka kernel. "jsk" for Jensen-Shannon Kernel. "flin" and "frbf" for functional linear
+and functional RBF kernels. "matrix" if a pre-computed kernel matrix is given as input.
+To perform MKL: Vector of *m* kernels to apply to each dataset.}
 
 \item{p}{The proportion of data reserved for the test set. Otherwise, a vector containing the indexes or the names of the rows for testing.}
 
-\item{plong}{Longitudinal}
-
 \item{C}{A cost, or a vector with the possible costs to evaluate via k-Cross-Val.}
 
-\item{H}{Gamma hyperparameter. A vector with the possible values to chose the best one via k-Cross-Val can be entered.
+\item{H}{Gamma hyperparameter (only in RBF-like functions). A vector with the possible values to chose the best one via k-Cross-Val can be entered.
 For the MKL, a list with *m* entries can be entered, being' *m* is the number of different data types. Each element on the list
 must be a number or, if k-Cross-Validation is needed, a vector with the hyperparameters to evaluate for each data type.}
 
 \item{E}{Epsilon hyperparameter, or a vector with the possible epsilons to evaluate via k-Cross-Val.}
+
+\item{domain}{Only used in "frbf" or "flin".}
 
 \item{k}{The k for the k-Cross Validation. Minimum k = 2. If no argument is provided cross-validation is not performed.}
 }
@@ -36,7 +49,7 @@ must be a number or, if k-Cross-Validation is needed, a vector with the hyperpar
 NMSE (normalized mean squared error)
 }
 \description{
-regress() automatically trains a Support Vector Regrssion model, tests it and returns the Normalized Mean Squared Error.
+regress() automatically trains a Support Vector Regression model, tests it and returns the Normalized Mean Squared Error.
 }
 \details{
 If the input data has repeated rownames, classify() will consider that the row names that share id are repeated
@@ -44,12 +57,10 @@ measures from the same individual. The function will ensure that all repeated me
 or to test the model, but not for both, thus preserving the independence between the training and tets sets.
 }
 \examples{
-# Data normalization
-soilData <- CSSnorm(data=t(soilDataRaw[-89,]))
 # Simple regression without tuning the hyperparameters
-regress(data=soilData,soilMetaData$ph[-89],kernel="qJac")
+regress(data=soil$abun,soil$metadata$ph,kernel="clin")
 # The percentage of data for training can be changed (default: 0.8 Training / 0.2 Test):
-regress(data=soilData,soilMetaData$ph[-89],kernel="qJac",p=0.6)
+regress(data=soil$abun,soil$metadata$ph,kernel="clin",p=0.6)
 # Regression with 10-Cross-Validation to choose the best Cost and Epsilon:
-regress(data=soilData, y=soilMetaData$ph[-89], kernel="qJac", C=c(0.1,1,10), E = c(0.01,0.1), k=10)
+regress(data=soil$abun,soil$metadata$ph,kernel="clin", C=c(0.1,1,10), E = c(0.01,0.1), k=10)
 }

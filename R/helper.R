@@ -1,7 +1,6 @@
 # HELPER FUNCTIONS
 
 # Pairwise kernel evaluation indexes
-
 #' @keywords internal
 expand.grid.mod <- function(x, rep) { # x is a vector
 
@@ -12,6 +11,51 @@ expand.grid.mod <- function(x, rep) { # x is a vector
   do.call(rbind, lapply(seq_along(x), g))
 }
 
+
+# Check input data
+#' @keywords internal
+checkinput <- function(data,y, kernel) {
+
+  if(class(data) == "list") {
+    m <- length(data)
+    if(m < 2) {
+      data <- unlist(data)
+    } else {
+      if(unique(sapply(data,class)) != "lsq") {
+      ## Comprova tots els elements tenen el mateix nombre de files
+      n <- unique(sapply(data,nrow))
+      } else {
+        n <- rep(0,m)
+        for(x in 1:m) {
+          n[x] <- data[[x]]$coeff
+        }
+        n <- unique(n)
+      }
+      if(length(n) != 1) stop("Elements of the list have different number of rows")
+    }
+
+  } else if(class(data) == "array") {
+    n <- dim(data)[1]
+    m <- dim(data)[3]
+    if(m < 2) data <- matrix(data[,,1],ncol=dim(data)[2],nrow=n)
+  } else if(class(data) == "data.frame" | class(data) == "matrix") {
+    m <- 1
+    n <- nrow(data)
+  } else if(class(data) == "lsq") {
+    m <- 1
+    n <- nrow(data$coef)
+  } else {
+    stop("Wrong input data class.")
+  }
+
+  if(length(y) != n) stop("Length of the target variable do not match with the row number of predictors")
+
+  if(length(kernel)>m) stop("kernel argument is longer than number of different datasets")
+
+  if(length(kernel)<m) kernel <- rep(kernel,ceiling(m/length(kernel)))[1:(m)]
+
+  return(list(data=data,m=m,kernel=kernel))
+}
 
 #Training indexes
 #' @keywords internal
@@ -66,10 +110,10 @@ finalTRTE  <- function(data,p) {
     learn.indexes <- which(id %in% trNames)
     test.indexes <- which(id %in% teNames)
     ## Unique test - si es vol llevar, comentar aquestes 4 línies.
-    names(test.indexes) <- id[which(id %in% teNames)]
-    test.indexes <- sample(test.indexes)[teNames]
-    names(test.indexes) <- NULL
-    test.indexes <- sort(test.indexes)
+    # names(test.indexes) <- id[which(id %in% teNames)]
+    # test.indexes <- sample(test.indexes)[teNames]
+    # names(test.indexes) <- NULL
+    # test.indexes <- sort(test.indexes)
     ## Per forçar una visita concreta:
     # test.indexes <- test.indexes[seq(from=8,to=length(test.indexes),by=8)]
   }
@@ -97,56 +141,6 @@ longTRTE <- function(data,plong) {
   return(list(li=learn.indexes,ti=test.indexes))
 }
 
-## Kernel matrices with weights
-#' @keywords internal
-#' @importFrom catkern rfweight
-
-compuKerWei <- function(data, train, y, kernel) UseMethod("compuKerWei",data)
-
-compuKerWei.array <- function(data, train, y, kernel) {
-  indw <- grep("w",kernel)
-  if(sum(indw)>0) {
-    w <- vector("list", dim(data)[3])
-    for(i in indw) {
-      w <- rfweight(x=data[train,,i],y=y,plot=FALSE)
-      w <- as.vector(w)
-      # names(w) <- colnames(data[,,i])
-      w[[i]] <- w
-    }
-    return(w)
-  } else {
-    return(NULL)
-  }
-}
-
-compuKerWei.list <- function(data, train, y, kernel) {
-
-  indw <- grep("w",kernel)
-  if(sum(indw)>0) {
-    w <- vector("list", length(data))
-    for(i in indw) {
-      w[[i]] <- rfweight(x=data[[i]][train,],y=y,plot=FALSE)
-      w[[i]] <- as.vector(w[[i]])
-      # names(w) <- colnames(data[[i]])
-      w[[i]] <- w}
-    return(w)
-  } else {
-    return(NULL)
-  }
-}
-
-compuKerWei.default <- function(data, train, y, kernel) {
-  data <- data[train,]
-  indw <- grep("w",kernel)
-  if(sum(indw)==1) {
-    w <- rfweight(x=data,y=y,plot=FALSE)
-    w <- as.vector(w)
-    # names(w) <- colnames(data)
-    return(w)
-  } else {
-    return(NULL)
-  }
-}
 
 # Class imbalance: data approach
 #' @keywords internal
@@ -160,7 +154,7 @@ smote <- function(data=data, diagn=diagn, nlearn=nlearn, N=N, learn.indexes,test
   diagn <- as.factor(diagn)
   return(list(data=data,diagn=diagn,nlearn=nlearn))
 }
-#
+
 smoteSample <- function(data, diagn, learn.indexes, m, test.indexes, kernel) {
   nlearn <- length(learn.indexes)
   ntest <- length(test.indexes)
@@ -220,21 +214,11 @@ hyperkSelection <- function(K, h, kernel) {
     paste("More kernel hyperparameters than kernel functions - Only the first element will be used")
     h <- h[1]
   }
-  if(kernel == "qJac" | kernel == "wqJac") {
-    Kmatrix <- exp(h*K)/exp(h) #Standardized Kernel Matrix. Otherwise exp(g*K)
-  } else if(kernel == "cRBF" | kernel == "time" | kernel == "time2") {
+  if (kernel == "rbf" | kernel == "crbf" | kernel == "frbf") {
     Kmatrix <- exp(-h*K)
     Kmatrix[is.na(Kmatrix)] <- 0
-  } else if(kernel == "rbf") {
-    Kmatrix <- exp(h*K)
-  } else if(kernel == "cov") {
+  }  else {
     Kmatrix <- K
-    Kmatrix[Kmatrix!=0] <- h
-    diag(Kmatrix) <- 1
-  } else if(kernel == "matrix" | kernel == "linear") {
-    Kmatrix <- K
-  } else {
-    stop("Kernel not available.")
   }
   return(Kmatrix)
 }

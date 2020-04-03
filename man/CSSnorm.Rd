@@ -2,7 +2,7 @@
 % Please edit documentation in R/Normalization.R
 \name{CSSnorm}
 \alias{CSSnorm}
-\title{DATA NORMALIZATION}
+\title{Cumulative Sum Scaling Normalization}
 \usage{
 CSSnorm(data)
 }
@@ -13,8 +13,8 @@ CSSnorm(data)
 Normalized data
 }
 \description{
-DATA NORMALIZATION
+Cumulative Sum Scaling Normalization
 }
 \examples{
-soilData <- CSSnorm(data=t(soilDataRaw))
+soilData <- CSSnorm(data=soil$abund)
 }

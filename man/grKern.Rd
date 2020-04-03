@@ -4,14 +4,16 @@
 \name{grKern}
 \alias{grKern}
 \title{Kernel matrices from Growth data}
-\format{A list with example kernel matrices from 'growth' data:
+\format{
+A list with example kernel matrices from 'growth' data:
  \describe{
   \item{[[1]]}{Categorical kernel over the 'sex' column in growth.}
   \item{[[2]]}{RBF kernel over the 'age' and 'height' column (gamma=0.01)}
   \item{[[3]]}{RBF kernel over the 'age' column (gamma=0.05)}
   \item{[[4]]}{Number of individuals and number of measures}
   \item{[[5]]}{A table Individual x Age marking the available data with a 1 and the absent with a 0}
-}}
+}
+}
 \source{
 Berkeley Growth Study Data
 Ramsay, James O., and Silverman, Bernard W. (2006), Functional Data Analysis, 2nd ed., Springer, New York.

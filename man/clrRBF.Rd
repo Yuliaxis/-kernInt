@@ -2,22 +2,21 @@
 % Please edit documentation in R/kernFunct.R
 \name{clrRBF}
 \alias{clrRBF}
-\title{clr transf + RBF kernel}
+\title{Aitchison RBF kernel}
 \usage{
 clrRBF(data, h = NULL)
 }
 \arguments{
-\item{data}{A matrix or data.frame containing only positive values.}
+\item{data}{A matrix or data.frame containing compositiona data in raw counts}
 
-\item{h}{Kernel hyperparameter (gamma)}
+\item{h}{Gamma hyerparameter. If NULL, the Aitchison distances are returned}
 }
 \value{
-RBF kernel over a clr transformated data
+The Aitchison RBF kernel.
 }
 \description{
-clr transf + RBF kernel
+Aitchison RBF kernel
 }
 \examples{
-example <- matrix(abs(rnorm(12)),nrow=4,ncol=3)
-kernelMatrix <- clrRBF(data=example)
+kmatrix <- clrRBF(data=soil$abund,h=0.001)
 }

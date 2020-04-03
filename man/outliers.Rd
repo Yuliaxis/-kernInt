@@ -4,21 +4,26 @@
 \alias{outliers}
 \title{SVM outlier detection / one class SVM}
 \usage{
-outliers(data, y, kernel, nu, p = 0.2, k, H = NULL)
+outliers(data, y, kernel, nu = 0.2, p = 0.2, k, domain = NULL, H = NULL)
 }
 \arguments{
-\item{data}{Input data}
+\item{data}{Input data: a matrix or data.frame with predictor variables/features as columns.
+To perform MKL: a list of *m* datasets. All datasets should have the same number of rows}
 
-\item{y}{Reponse variable. If a value is provided, outliers() functions as an one-class SVM.}
+\item{y}{Reponse variable (factor)}
 
-\item{kernel}{"qJac" for quantitative Jaccard and "wqJacc" for quant Jaccard with weights.
-"matrix" if a pre-calculated kernel matrix is given as input.}
+\item{kernel}{"lin" or rbf" to standard Linear and RBF kernels. "clin" for compositional linear and "crbf" for Aitchison-RBF
+kernels. "jac" for quantitative Jaccard / Ruzicka kernel. "jsk" for Jensen-Shannon Kernel. "flin" and "frbf" for functional linear
+and functional RBF kernels. "matrix" if a pre-computed kernel matrix is given as input.
+To perform MKL: Vector of *m* kernels to apply to each dataset.}
 
 \item{nu}{Hyperparameter nu}
 
-\item{p}{If a value for y is provided, p is the proportion of total data instances in the training set}
+\item{p}{If a value for y is provided, p is the proportion of total data instances in the test set}
 
 \item{k}{The k for the k-Cross Validation. Minimum k = 2.}
+
+\item{domain}{Only used in "frbf" or "flin".}
 
 \item{H}{Hyperparameter gamma}
 }
@@ -35,15 +40,9 @@ or to test the model, but not for both, thus preserving the independence between
 }
 \examples{
 # Outlier detection
-outliers(data=soilDataRaw,kernel="cRBF",nu=0.3)
+outliers(data=soil$abund,kernel="clin",nu=0.2)
 ## One-class SVM:
-## Preparing the y
-diag <- as.numeric(speMGX[,1])
-diag[diag == 3] <- 1  # De 3 a 2 classes: No Malalt /  malalt
-diag[diag == 2] <- 0
-diag <- as.numeric(!diag) # No malalt classe 1, malalt classe 0
-## One-class SVM changing the percentage of data for training (70\%) and the hyperparameter nu:
-outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",nu=0.2,p=0.7)
+outliers(data=soil$abund ,y=soil$metadata[ ,"env_feature"],kernel="clin")
 ## One-class SVM with 10-Cross-Validation:
-outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",nu=c(0.45,0.5),H=c(0.1,1),k=10)
+outliers(data=soil$abund ,y=soil$metadata[ ,"env_feature"],kernel="clin",nu=c(0.45,0.5),k=10)
 }

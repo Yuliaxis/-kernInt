@@ -3,11 +3,10 @@
 #' @importFrom kernlab ksvm cross
 #' @importFrom stats na.omit
 
-kCV.class <- function(CUT, COST, K, Yresp, k, R, prob, classimb=FALSE) {
+kCV.class <- function(COST, K, Yresp, k, R, prob, classimb) {
 
   # on Y és el vector resposta, i K.train la submatriu amb els individus de training
   min.error <- Inf
-  if(is.null(CUT)) cut <- 0.5
 
   for (c in COST) {
 
@@ -16,47 +15,17 @@ kCV.class <- function(CUT, COST, K, Yresp, k, R, prob, classimb=FALSE) {
       unordered <- sample.int(nrow(K))
       Kmatrix <- K[unordered,unordered]
       Y <- Yresp[unordered]
-      if(prob & hasArg(CUT)) {
-        N <- trunc(nrow(Kmatrix)/k,digits=0)
-        PRED <- matrix(NA,ncol=1,nrow=nrow(Kmatrix))
-        # rownames(PRED) <- as.character(Y)
-        for(p in 0:(k-1)) {
-          if(p < (k-1)) {
-             indexTE <- (1+(p*N)):((p+1)*N)
-          } else {
-             indexTE <- (1+(p*N)):nrow(Kmatrix)
-          }
-          TEST <- Kmatrix[indexTE,-indexTE]
-          K.model <- ksvm(Kmatrix[-indexTE,-indexTE], Y[-indexTE], type="C-svc",kernel="matrix",prob.model=prob,C=c) # Rular el mètode
-          TEST <- TEST[,SVindex(K.model),drop=FALSE]
-          TEST <- as.kernelMatrix(TEST)
-          pred <- predict(K.model,TEST,type = "probabilities")
-          PRED[indexTE,1] <- pred[,2] #minority class
-        }
-        PRED <- na.omit(PRED)
-        acu <- vector(mode="numeric",length=length(cut))
-        for(cut in 1:length(CUT)) {
-          pr <- (PRED < CUT[cut])
-          pr[pr] <- 1
-          pr[pr==0] <- 2
-          acu[cut] <- sum(as.numeric(Y) == pr)/nrow(pr) # És ok aquesta aproximació??
-        }
-        cut <- CUT[which.max(acu)]
-        outer.error[o] <- max(acu)
-      } else {
-        K.model <- ksvm(Kmatrix, Y, type="C-svc",kernel="matrix",prob.model=prob,class.weights=classimb,C=c,cross=k) # Rular el mètode
-        }
-      if(!prob) outer.error[o] <- cross(K.model) # La mitjana dels errors és l'error de CV
+      K.model <- ksvm(Kmatrix, Y, type="C-svc",kernel="matrix",prob.model=prob,class.weights=classimb,C=c,cross=k) # Rular el mètode
+      outer.error[o] <- cross(K.model) # La mitjana dels errors és l'error de CV
     }
     v.error <- mean(outer.error)
     print(v.error)
     if (min.error > v.error) {
         min.error <- v.error
         best.cost <- c
-        best.cut <- cut
       }
     }
-  best.hyp <- data.frame(cost=best.cost,epsilon=NA,cut=best.cut,nu=NA, error= min.error)
+  best.hyp <- data.frame(cost=best.cost,epsilon=NA,nu=NA, error= min.error)
   print(best.hyp)
 
   return(best.hyp)
@@ -86,7 +55,7 @@ kCV.one <- function(K, Yresp, NU, k=k, R=k) {
       best.h1 <- nu
     }
   }
-  best.hyp <- data.frame(cost=NA,epsilon=NA,cut=NA,nu=best.h1, error= min.error)
+  best.hyp <- data.frame(cost=NA,epsilon=NA,nu=best.h1, error= min.error)
   return(best.hyp)
 }
 
@@ -116,7 +85,7 @@ kCV.reg <- function(EPS, COST, K, Yresp, k, R) {
       }
     }
   }
-  best.hyp <- data.frame(cost=best.cost,epsilon=best.e,cut=NA,nu=NA,error= min.error)
+  best.hyp <- data.frame(cost=best.cost,epsilon=best.e,nu=NA,error= min.error)
   return(best.hyp)
 }
 
@@ -142,14 +111,14 @@ kCV.core <- function(H, kernel, method, K, ...) {
       best.h <- h
       best.cost <- bh$cost
       best.e <- bh$epsilon
-      best.cut <- bh$cut
       best.nu <- bh$nu
       min.error <- bh$error
     }
   }
-  if(is.null(h)) {  best.hyp <- data.frame(cost=best.cost,epsilon=best.e,cut=best.cut,nu=best.nu,error= min.error)
+  if(is.null(h)) {
+    best.hyp <- data.frame(cost=best.cost,epsilon=best.e,nu=best.nu,error= min.error)
   } else{
-    best.hyp <- data.frame(h=best.h,cost=best.cost,epsilon=best.e,cut=best.cut,nu=best.nu,error= min.error)
+    best.hyp <- data.frame(h=best.h,cost=best.cost,eps=best.e,nu=best.nu,error= min.error)
   }
 
   return(best.hyp)
@@ -201,7 +170,6 @@ kCV.MKL <- function(ARRAY, COEFF, KERNH, kernels, method, ...) {
         ii <- indexes[k,]
         best.cost <- bh$cost
         best.e <- bh$epsilon
-        best.cut <- bh$cut
         best.nu <- bh$nu
         best.coeff <- COEFF[i,]
         min.error <- bh$error
@@ -209,6 +177,6 @@ kCV.MKL <- function(ARRAY, COEFF, KERNH, kernels, method, ...) {
     }
   }
   best.h <- unliH[as.numeric(ii)]
-  best.hyp <- list(coeff=best.coeff,h=best.h,cost=best.cost,epsilon=best.e,cut=best.cut,nu=best.nu,error= min.error)
+  best.hyp <- list(coeff=best.coeff,h=best.h,cost=best.cost,eps=best.e,nu=best.nu,error= min.error)
   return(best.hyp)
 }

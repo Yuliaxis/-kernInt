@@ -8,39 +8,35 @@
 #' measures from the same individual. The function will ensure that all repeated measures are used either to train
 #' or to test the model, but not for both, thus preserving the independence between the training and tets sets.
 #'
-#' @param data Input data
-#' @param y Reponse variable. If a value is provided, outliers() functions as an one-class SVM.
-#' @param kernel "qJac" for quantitative Jaccard and "wqJacc" for quant Jaccard with weights.
-#' "matrix" if a pre-calculated kernel matrix is given as input.
+#' @param data Input data: a matrix or data.frame with predictor variables/features as columns.
+#' To perform MKL: a list of *m* datasets. All datasets should have the same number of rows
+#' @param y Reponse variable (factor)
+#' @param kernel "lin" or rbf" to standard Linear and RBF kernels. "clin" for compositional linear and "crbf" for Aitchison-RBF
+#' kernels. "jac" for quantitative Jaccard / Ruzicka kernel. "jsk" for Jensen-Shannon Kernel. "flin" and "frbf" for functional linear
+#' and functional RBF kernels. "matrix" if a pre-computed kernel matrix is given as input.
+#' To perform MKL: Vector of *m* kernels to apply to each dataset.
 #' @param nu Hyperparameter nu
-#' @param p If a value for y is provided, p is the proportion of total data instances in the training set
+#' @param p If a value for y is provided, p is the proportion of total data instances in the test set
 #' @param k The k for the k-Cross Validation. Minimum k = 2.
 #' @param H Hyperparameter gamma
+#' @param domain Only used in "frbf" or "flin".
 #' @return The indexes of the outliers (outlier detection) or, if a value is provided for y, the confusion matrix (one-class SVM)
 #' @examples
 #' # Outlier detection
-#' outliers(data=soilDataRaw,kernel="cRBF",nu=0.3)
+#' outliers(data=soil$abund,kernel="clin",nu=0.2)
 #' ## One-class SVM:
-#' ## Preparing the y
-#' diag <- as.numeric(speMGX[,1])
-#' diag[diag == 3] <- 1  # De 3 a 2 classes: No Malalt /  malalt
-#' diag[diag == 2] <- 0
-#' diag <- as.numeric(!diag) # No malalt classe 1, malalt classe 0
-#' ## One-class SVM changing the percentage of data for training (70%) and the hyperparameter nu:
-#' outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",nu=0.2,p=0.7)
+#' outliers(data=soil$abund ,y=soil$metadata[ ,"env_feature"],kernel="clin")
 #' ## One-class SVM with 10-Cross-Validation:
-#' outliers(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac",nu=c(0.45,0.5),H=c(0.1,1),k=10)
+#' outliers(data=soil$abund ,y=soil$metadata[ ,"env_feature"],kernel="clin",nu=c(0.45,0.5),k=10)
 #' @importFrom kernlab ksvm predict
+#' @importFrom methods hasArg
 #' @export
 
 
 
-outliers <- function(data,y,kernel,nu,p=0.2,k,H=NULL) {
+outliers <- function(data,y,kernel,nu=0.2,p=0.2,k,domain=NULL,H=NULL) {
 
-  if(hasArg(y)) {
-    y <- as.factor(y)
-    levels(y) <- c("0","1")
-  }
+  if(hasArg(y)) y <- as.factor(y)
 
   if(class(data) == "list") {
     m <- length(data)
@@ -55,7 +51,7 @@ outliers <- function(data,y,kernel,nu,p=0.2,k,H=NULL) {
     stop("Wrong input data class.")
   }
 
-  Jmatrix <- kernelSelect(kernel,data,y,h=NULL)
+  Jmatrix <- kernelSelect(kernel,data,domain,h=NULL)
 
   if(hasArg(y)){
     index <- finalTRTE(data,1-p) ## data és una matriu en aquest cas. passar-ho a MKL.

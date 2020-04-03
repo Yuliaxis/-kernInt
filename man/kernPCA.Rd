@@ -4,8 +4,20 @@
 \alias{kernPCA}
 \title{kernel PCA}
 \usage{
-kernPCA(data, kernel, H = NULL, y, dim = c(1, 2), colors,
-  na.col = "grey70", title, legend = TRUE, labels = FALSE)
+kernPCA(
+  data,
+  kernel,
+  plot = TRUE,
+  H = NULL,
+  domain = NULL,
+  y,
+  dim = c(1, 2),
+  colors,
+  na.col = "grey70",
+  title,
+  legend = TRUE,
+  labels = FALSE
+)
 }
 \arguments{
 \item{data}{Input data: a matrix or data.frame.}
@@ -13,7 +25,11 @@ kernPCA(data, kernel, H = NULL, y, dim = c(1, 2), colors,
 \item{kernel}{"linear" for linear kernel, "rbf" for RBF, "cRBF" for clrRBF, "qJac" for quantitative Jaccard.
 "matrix" if a pre-calculated kernel matrix is given as input.}
 
-\item{H}{Kernel hyperparameter.}
+\item{plot}{TRUE to return the plot, FALSE to return the projection object}
+
+\item{H}{Kernel gamma hyperparameter if needed (only RBF-like kernels)}
+
+\item{domain}{Only used in "frbf" or "flin".}
 
 \item{y}{Response vector; optional. Colors each dot (individual) according to its value in the response / target variable.}
 
@@ -21,7 +37,7 @@ kernPCA(data, kernel, H = NULL, y, dim = c(1, 2), colors,
 
 \item{colors}{Dot fill color; optional.}
 
-\item{na.col}{Depends on y and col. Dot fill color for the y missing values; defaults to grey.}
+\item{na.col}{Depends on y and colors. Dot fill color for the y missing values; defaults to grey.}
 
 \item{title}{Plot title}
 
@@ -36,6 +52,6 @@ A  k-PCA plot generated with ggplot2.
 kernel PCA
 }
 \examples{
-kernPCA(soilDataRaw[-89,],kernel="cRBF", H=0.0001,y=soilMetaData$ph[-89], col=c("aquamarine2","orchid3"),
+kernPCA(soil$abund,kernel="clin", y=soil$metadata$phd, colors=c("aquamarine2","orchid3"),
 title = "Soil kernel PCA",legend = TRUE)
 }

@@ -4,12 +4,14 @@
 \name{growth}
 \alias{growth}
 \title{Growth data}
-\format{A matrix with 744 rows (93 individuals * 8 measures) and 3 variables:
+\format{
+A matrix with 744 rows (93 individuals * 8 measures) and 3 variables:
  \describe{
   \item{Sex}{Boy or girl}
   \item{Age}{Ranging from 11 to 18}
   \item{Height}{Height in cm}
-}}
+}
+}
 \source{
 Berkeley Growth Study Data
 Ramsay, James O., and Silverman, Bernard W. (2006), Functional Data Analysis, 2nd ed., Springer, New York.

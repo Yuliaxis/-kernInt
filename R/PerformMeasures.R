@@ -14,10 +14,8 @@ error.norm <- function(target,prediction) {
 #' @param ct Confusion Matrix
 #' @return Accuracy
 #' @examples
-#' diag <- as.numeric(speMGX[,1])
-#' diag[diag == 3] <- 1  # De 3 a 2 classes: No Malalt /  malalt
-#' CM <- classify(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac")
-#' Acc(CM$"conf.matrix")
+#' model <- classify(data=soil$abund,y=soil$metadata[,"env_feature"],kernel="clin")
+#' Acc(model$"conf.matrix")
 #' @export
 
 Acc <- function(ct) sum(diag(ct))/sum(ct)
@@ -28,10 +26,8 @@ Acc <- function(ct) sum(diag(ct))/sum(ct)
 #' @param min.class Minority class
 #' @return F1
 #' @examples
-#' diag <- as.numeric(speMGX[,1])
-#' diag[diag == 3] <- 1  # De 3 a 2 classes: No Malalt /  malalt
-#' CM <- classify(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac")
-#' F1(CM$"conf.matrix")
+#' model <- classify(data=soil$abund,y=soil$metadata[,"env_feature"],kernel="clin")
+#' F1(model$"conf.matrix")
 #' @export
 
 F1 <-  function(ct,min.class=2) {
@@ -48,10 +44,8 @@ F1 <-  function(ct,min.class=2) {
 #' @param min.class Minority class
 #' @return Precision
 #' @examples
-#' diag <- as.numeric(speMGX[,1])
-#' diag[diag == 3] <- 1  # De 3 a 2 classes: No Malalt /  malalt
-#' CM <- classify(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac")
-#' Prec(CM$"conf.matrix")
+#' model <- classify(data=soil$abund,y=soil$metadata[,"env_feature"],kernel="clin")
+#' Prec(model$"conf.matrix")
 #' @export
 
 Prec <- function(ct,min.class=2) {
@@ -65,10 +59,8 @@ Prec <- function(ct,min.class=2) {
 #' @param min.class Minority class
 #' @return Recall
 #' @examples
-#' diag <- as.numeric(speMGX[,1])
-#' diag[diag == 3] <- 1  # De 3 a 2 classes: No Malalt /  malalt
-#' CM <- classify(data=speMGX[,7:ncol(speMGX)],y=diag,kernel="qJac")
-#' Rec(CM$"conf.matrix")
+#' model <- classify(data=soil$abund,y=soil$metadata[,"env_feature"],kernel="clin")
+#' Rec(model$"conf.matrix")
 #' @export
 
 Rec <-  function(ct,min.class=2) {

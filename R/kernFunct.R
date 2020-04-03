@@ -1,219 +1,297 @@
 # KERNEL FUNCTIONS
 
-#' Quantitative Jaccard
-#'
-#' This function delivers the quantitative Jaccard kernel matrix, also known as Ruzicka similarity.
-#'
-#' @param data A matrix or data.frame containing nonnegative values.
-#' @param h An hyperparametr
-#' @return The quantitative Jaccard kernel matrix
-#' @examples
-#' example <- matrix(abs(rnorm(12)),nrow=4,ncol=3)
-#' qJaccMatrix <- qJacc(data=example)
-#' @export
 
+############# STANDARD FUNCTIONS ###################
 
-qJacc <- function(data,h=NULL) {
-
-  data <- as.matrix(data)
-  n <- nrow(data)
-  ids <- expand.grid.mod(1:n,rep = FALSE)
-
-  Comp <- rowSums(pmin(data[ids[,1],],data[ids[,2],]))/rowSums(pmax(data[ids[,1],],data[ids[,2],]))
-
-  Ncomb <- 1:((n^2-n)/2)
-  K <- matrix(0,nrow=n,ncol=n)
-  for (i in Ncomb)  K[ids[i,1],ids[i,2]] <- Comp[i]
-  colnames(K) <- rownames(data)
-  rownames(K) <- colnames(K)
-  tK <- t(K)
-  K <- tK + K # Upper triangular matrix to symmetric matrix
-  diag(K) <- 1
-  if(!is.null(h) && h != 0 )  K <- exp(h*K)/exp(h)
-  return(K)
-}
-
-#' Quantitative Jaccard with weights
-#'
-#' This function delivers the quantitative Jaccard kernel matrix, also known as Ruzicka similarity,
-#' with the option to weight each variable.
-#'
-#' @param data A matrix or data.frame containing nonnegative values.
-#' @param w  a vector of weights as long as the number of variables.
-#' Class should be set to "numeric". If empty, weights will be authomathically computed as the RF mean
-#' decrease in Gini index (see below)
-#' @param y If a vector of weights is not provided, a vector of responses for computing the RF
-#' weights should be provided instead.
-#' @param h An hyperparametr
-#' @return The weighted quantitative Jaccard kernel matrix
-#' @examples
-#' example <- matrix(abs(rnorm(12)),nrow=4,ncol=3)
-#' weights <- c(0.1,0.7,0.2)
-#' qJaccMatrix <- wqJacc(data=example,w = weights)
-#' @importFrom methods hasArg
-#' @importFrom catkern rfweight
-#' @export
-
-
-wqJacc <- function(data, w, y, h=NULL) {
-  if(!hasArg(w)) {
-    if(hasArg(y)) {
-      w <- rfweight(x=data,y=y,plot=FALSE)
-      w <- as.vector(w)
-    } else {
-      stop("Either a vector of weights or the response variable should be provided")
-    }
-  }
-  if(length(w) != ncol(data)) stop(paste("Number of weights and number of variables do not coincide."))
-
-  weidata <- t(w * t(data))
-
-  return(qJacc(data=weidata,h=h))
-}
-
-# Aitchison distance kernel
-#'
-#' Aitchison distance kernel
-#'
-#' @param data A matrix or data.frame containing only positive values.
-#' @return Aitchison distance matrix
-#' @examples
-#' example <- matrix(abs(rnorm(12)),nrow=4,ncol=3)
-#' aitch.dist(data=example)
-#' @importFrom robCompositions cenLR
-#' @importFrom stats dist
-#' @export
-#'
-
-aitch.dist <- function(data) {
-  minv <- min(  data[data!=min(data)] )
-  minv <- minv/10
-  clrEucl <- cenLR(data+minv)
-  clrPROK <- clrEucl$x.clr
-  aitch <- dist(clrPROK, method = "euclidean",diag=TRUE,upper = TRUE)
-  return(as.matrix(aitch))
-}
-
-
-#' clr transf + RBF kernel
-#'
-#' @param data A matrix or data.frame containing only positive values.
-#' @param h Kernel hyperparameter (gamma)
-#' @return RBF kernel over a clr transformated data
-#' @examples
-#' example <- matrix(abs(rnorm(12)),nrow=4,ncol=3)
-#' kernelMatrix <- clrRBF(data=example)
-#' @importFrom robCompositions cenLR
-#' @importFrom stats dist
-#' @export
-#'
-
-clrRBF <- function(data,h=NULL) {
-  K <- aitch.dist(data)
-  if(!is.null(h) && h != 0 ) K <- exp(-h*(K^2)) #RBF
-  return(K)
-}
-
-# Covariance matrix
+## Cosine normalization
 #' @keywords internal
-covmat <- function(ind, visits, h=0.5) {
-  if(is.null(h) || h == 0 ) h <- 0.5
-  # if(is.null(h) | h == 0 ) stop ("Wrong hyperparameter value")
-  totalrows <- visits*ind
-  K <- matrix(0,nrow=totalrows,ncol=totalrows)
-  rownames(K) <- 1:totalrows
-  colnames(K) <- rownames(K)
-  for(i in 1:ind) {
-    index <- ((i-1)*visits+1):(i*visits)
-    K[index,index] <- h
-  }
-  diag(K) <- 1
-  return(K)
-}
 
-# Linear kernel (via crossprod)
-#' @keywords internal
-Linear <- function(data) {
-  K <- tcrossprod(data)
+cosNorm <- function(K) {
   D <- diag(1/sqrt(diag(K)))
   K <- D %*% K %*% D
+  return(K)
+}
+
+
+#' Linear kernel
+#'
+#' @param data A matrix or data.frame with real numbers
+#' @param cos.norm If TRUE the cosine normalization is applied
+#' @return The linear kernel matrix
+#' @examples
+#' example <- matrix(rnorm(12),nrow=4,ncol=3)
+#' kmatrix <- Linear(data=example)
+#' @export
+
+
+Linear <- function(data,cos.norm=TRUE) {
+  K <- tcrossprod(data)
+  if(cos.norm) K <- cosNorm(K)
   rownames(K) <- rownames(data)
   colnames(K) <- rownames(data)
   return(K)
 }
 
-# RBF Kernel
-#' @keywords internal
+
+#' RBF kernel
+#'
+#' @param data A matrix or data.frame with real numbers
+#' @param h Gamma hyerparameter. If NULL, the euclidian distances are returned
+#' @return The RBF kernel matrix
+#' @examples
+#' example <- matrix(rnorm(12),nrow=4,ncol=3)
+#' kmatrix <- RBF(data=example)
+#' @export
+
 RBF <- function(data,h=NULL) {
   N <- nrow(data)
   kk <- tcrossprod(data)
   dd <- diag(kk)
   K <- 2*kk-matrix(dd,N,N)-t(matrix(dd,N,N))
-  if(!is.null(h) && h != 0 ) K <- exp(h*K) #RBF
+  if(is.null(h) || h == 0 ) return(-K)
+  return(exp(h*K))
+}
+
+####### Microbiome  beta diversities #########
+
+#' Quantitative Jaccard
+#'
+#' This function returns the quantitative Jaccard kernel matrix, also known as Ruzicka similarity.
+#'
+#' @param data A matrix or data.frame containing nonnegative values.
+#' @return The quantitative Jaccard kernel matrix
+#' @examples
+#' example <- matrix(abs(rnorm(12)),nrow=4,ncol=3)
+#' kmatrix <- qJacc(data=example)
+#' @importFrom vegan vegdist
+#' @export
+
+
+qJacc <- function(data) {
+  ruzicka <- vegdist(data,method="jaccard",diag=TRUE,upper=TRUE)
+  ruzicka <- as.matrix(ruzicka)
+  return(1-ruzicka)
+}
+
+# Jensen-Shannon kernel
+#'
+#' This function returns the Jensen Shannon Kernel
+#'
+#' @param data A matrix or data.frame containing nonnegative values.
+#' @return The JS kernel matrix
+#' @examples
+#' example <- matrix(abs(rnorm(12)),nrow=4,ncol=3)
+#' kmatrix <- JSK(data=example)
+#' @importFrom philentropy JSD
+#' @export
+
+JSK <- function(data)    {
+  if(sum(rowSums(data)>1)>0) {
+    div <- JSD(data,est.prob = "empirical")
+  } else {
+    div <- JSD(data)
+  }
+  return(1-div)
+}
+
+#' Compositional Linear kernel
+#'
+#' @param data A matrix or data.frame containing compositiona data in raw counts
+#' @param cos.norm If TRUE the cosine normalization is applied
+#' @return The compositional linear kernel matrix
+#' @examples
+#' kmatrix <- clrLin(data=soil$abund)
+#' @export
+
+clrLin <- function(data,cos.norm=TRUE) {
+  data <- clr(data)
+  return(Linear(data=data,cos.norm = cos.norm))
+}
+
+#' Aitchison RBF kernel
+#'
+#' @param data  A matrix or data.frame containing compositiona data in raw counts
+#' @param h Gamma hyerparameter. If NULL, the Aitchison distances are returned
+
+#' @return The Aitchison RBF kernel.
+#' @examples
+#' kmatrix <- clrRBF(data=soil$abund,h=0.001)
+#' @export
+#'
+
+clrRBF <- function(data,h=NULL) {
+  data <- clr(data)
+  return(RBF(data=data,h=h) )#RBF
+
+}
+
+######### Kernels for functions ################
+
+
+#' Functional linear kernel
+#'
+#' @param data  Output of lsq()
+#' @param domain Domain
+#' @param cos.norm If TRUE, perform cosine normalization
+#' @return A kernel matrix
+#' @examples
+#' growth2 <- growth[,2:3]
+#' colnames(growth2) <-  c( "time", "height")
+#' fitted <- lsq(data=growth2,degree=2)
+#' Kfun(fitted,domain=c(11,18))
+#' @importFrom polynom integral polynomial
+#' @export
+
+Kfun <- function(data,domain,cos.norm=FALSE) {
+
+  if(class(data) != "lsq") stop("data should be of class lsq")
+
+  degree <- data$degree
+
+  inf <- min(domain)
+  sup <- max(domain)
+
+  d <- length(data$y.names)
+
+  data <- data$coef
+
+  ids <- expand.grid.mod(1:nrow(data),rep = FALSE)
+  jds <- seq(from=1,to=ncol(data),by=degree+1)
+
+  if(degree != 1) { ## a l'espera d'una implementació millor:
+    Comp <- matrix(0,nrow=nrow(ids),ncol=d)
+    for(i in 1:nrow(ids)) {
+      for(j in 1:length(jds)) {
+        Comp[i,j] <-  integral((polynomial(data[ids[i,1], j:(j+degree)]) *  polynomial(data[ids[i,2],j:(j+degree)])),limits=domain)
+
+      }
+    }
+  } else {
+
+  ### helper
+  evenID <- function(number) seq(from=2,to=number,by=2)
+  oddID <- function(number) seq(from=1,to=number,by=2)
+
+
+   newF <- data[ids[,1],] * data[ids[,2],]
+
+  A <- (newF[,evenID(ncol(data))])/3
+  B <- (newF[,oddID(ncol(data))])
+
+  newF <- data[ids[,1],-1] * data[ids[,2],-ncol(data)] + data[ids[,1],-ncol(data)] * data[ids[,2],-1]
+
+  C <-  (newF[,oddID(ncol(data)-1)])/2
+
+  X <- (sup^3-inf^3)*A + (sup^2-inf^2)*C + (sup-inf)*B
+  }
+
+  if(d>1) Comp <- rowSums(X)
+
+  K <- matrix(0,ncol=nrow(data),nrow=nrow(data))
+  for(i in 1:nrow(ids)) K[ids[i,1],ids[i,2]] <- K[ids[i,2],ids[i,1]] <- Comp[i]
+  if(cos.norm) K <- cosNorm(K)
+  rownames(K) <- colnames(K) <- rownames(data)
   return(K)
 }
 
-# Fisher kernel from Poisson distribution
-#' @keywords internal
 
-FisherPoisson <- function(data) {
-  # Generate subdata
-  k <- summary(as.factor(rownames(data)),maxsum=nrow(data))
-  if(!identical(names(K),unique(rownames(data)))) stop("Please check the data rownames")
-  # subs <- cumsum(subs)-subs+1
-  names <- unique(rownames(data))
-  subdata <- lapply(names, function(i){
-    ids <- which(rownames(data) == i)
-   (data)[ids,]
-  })
+#' RBF kernel for functions
+#'
+#' @param data  Output of lsq()
+#' @param domain Domain
+#' @param h Gamma hyerparameter. If NULL, the L2 norms are returned
+#' @return The L2 norm (euclidean distance) between to matrices
+#' @examples
+#' growth2 <- growth[,2:3]
+#' colnames(growth2) <-  c( "time", "height")
+#' fitted <- lsq(data=growth2,degree=2)
+#' RBFun(fitted,domain=c(11,18),h=0.00001)
+#' @importFrom polynom integral polynomial
+#' @export
 
-  # Log-likelihood Gradients:  sum(xik/li - 1) -> i/li * sum(xik) - K
-  #Obtain vector of lambda
+RBFun <- function(data,h=NULL,domain) {
 
-  Ls <- matrix(rep(colMeans(data),length(names)),ncol=ncol(data),byrow = TRUE)
-  Nums <- sapply(subdata,colSums,simplify="array")
-  Nums <- t(Nums)
+  if(class(data) != "lsq") stop("data should be of class lsq")
 
-  Q <- Nums/Ls
-  rownames(Q) <- names
-  K <- matrix(rep(k,ncol(data)),ncol=ncol(data))
-  gradPoisson <- Q - K
-  gradPoisson[is.na(gradPoisson)] <- 0
-  # Obtenim matriu on cada fila és es gradPoisson per a 1 individus:
-  K <- tcrossprod(gradPoisson)
-  D <- diag(1/sqrt(diag(K)))
-  K <- D %*% K %*% D
-  return(K)
+  degree <- data$degree
+
+  inf <- min(domain)
+  sup <- max(domain)
+
+  d <- length(data$y.names)
+
+  data <- data$coef
+
+  ids <- expand.grid.mod(1:nrow(data),rep = FALSE)
+  jds <- seq(from=1,to=ncol(data),by=degree+1)
+
+  if(degree != 1) { ## a l'espera d'una implementació millor:
+    Comp <- matrix(0,nrow=nrow(ids),ncol=d)
+    for(i in 1:nrow(ids)) {
+      for(j in 1:length(jds)) {
+        Comp[i,j] <-  integral((polynomial(data[ids[i,1], j:(j+degree)]) -  polynomial(data[ids[i,2],j:(j+degree)]))^2,limits=domain)
+
+      }
+    }
+  } else {
+
+    evenID <- function(number) seq(from=2,to=number,by=2)
+    oddID <- function(number) seq(from=1,to=number,by=2)
+
+
+    newF <- data[ids[,1],] - data[ids[,2],]
+
+    A <- (newF[,evenID(ncol(data))])
+    B <- (newF[,oddID(ncol(data))])
+    C <- A*B
+    A <- 1/3*(A^2)
+    B <- B^2
+
+    X <- (sup^3-inf^3)*A + (sup^2-inf^2)*C + (sup-inf)*B
+  }
+
+  if(d>1) Comp <- rowSums(X)
+
+  K <- matrix(0,ncol=nrow(data),nrow=nrow(data))
+  for(i in 1:nrow(ids)) K[ids[i,1],ids[i,2]] <- K[ids[i,2],ids[i,1]] <- Comp[i]
+  rownames(K) <- colnames(K) <- rownames(data)
+  if(is.null(h) | h == 0 ) return(-K)
+  return(exp(h*K))
 }
+
+
 
 #Kernel selection
 #' @keywords internal
-kernelSelect <- function(kernel,data,w=NULL,y=NULL,h=NULL) { #h és un hiperparàmetre
-  if(kernel == "qJac") {
-    cat("quantJaccard kernel\n")
-    return(qJacc(data,h))
-  } else if(kernel == "wqJac") {
-    cat("quantJaccard kernel + weights \n")
-    return(wqJacc(data=data,w=w,h=h))
-  }  else if(kernel == "cRBF") {
-    cat("clr + RBF \n")
-    return(clrRBF(data=data,h=h))
-  } else if(kernel == "time") {
-    cat("Time matrix \n")
-    return(TimeK(data,h))
-  } else if(kernel == "cov") {
-    cat("Covariance matrix \n")
-    return(covmat(ind=data[1],visits=data[2],h))
-  } else if(kernel == "matrix" | kernel == "time2") {
+kernelSelect <- function(kernel,data,domain=NULL,h=NULL) { #h és un hiperparàmetre
+  if(kernel == "jac") {
+    cat("quantitative Jaccard (Ruzicka) kernel\n")
+    return(qJacc(data=data))
+  } else if(kernel == "jsk") {
+    cat("Jensen Shannon kernel \n")
+    return(JSK(data=data))
+  } else if (kernel=="lin") {
+    cat("Linear kernel \n")
+    return(Linear(data=data))
+  }  else if (kernel=="rbf") {
+    cat("RBF kernel \n")
+    return(RBF(data=data,h=h))
+  } else if(kernel == "clin") {
+    cat("Compositional Linear kernel \n")
+    return(clrLin(data=data))
+  } else if(kernel == "crbf") {
+    cat("Aitchison-RBF kernel\n")
+    return(clrRBF(data=data))
+  } else if(kernel == "flin") {
+    cat("Functional Linear kernel \n")
+    return(Kfun(data=data,domain=domain))
+  } else if(kernel == "frbf") {
+    cat("Functional RBF kernel\n")
+    return(RBFun(data=data,h=h,domain=domain))
+  } else if(kernel == "matrix") {
     cat("Pre-computed kernel matrix given \n")
     return(as.matrix(data))
-  } else if (kernel=="linear") {
-    cat("Linear \n")
-    return(Linear(data))
-  } else if (kernel=="rbf") {
-    cat("RBF \n")
-    return(RBF(data,h))
-  } else {
+  }  else {
     stop("Kernel not available.") ##temporalment
   }
 }
@@ -222,20 +300,20 @@ kernelSelect <- function(kernel,data,w=NULL,y=NULL,h=NULL) { #h és un hiperpar�
 # Kernel computing for different types of data
 #' @keywords internal
 
-seqEval <- function(DATA,kernels,y,w,h) UseMethod("seqEval",DATA)
+seqEval <- function(DATA,kernels,domain,h) UseMethod("seqEval",DATA)
 
-seqEval.array <- function(DATA,kernels,y=NULL,w=NULL,h=NULL) {
+seqEval.array <- function(DATA,kernels, domain=NULL, h=NULL) {
   m <- dim(DATA)[3]
   n <- nrow(DATA[,,1])
   K <- array(0,dim=c(n,n,m))
-  for(i in 1:m) K[,,i] <- kernelSelect(data = DATA[,,i],  kernel = kernels[i],w=w[[i]], h=h[i])
+  for(i in 1:m) K[,,i] <- kernelSelect(data = DATA[,,i],domain=domain,kernel = kernels[i], h=h[i])
   return(K)
 }
-seqEval.list <- function(DATA,kernels,y=NULL,w=NULL,h=NULL) {
+seqEval.list <- function(DATA,kernels,domain=NULL, h=NULL) {
   m <- length(DATA)
   n <- nrow(DATA[[1]])
   K <- array(0,dim=c(n,n,m))
-  for(i in 1:m) K[,,i] <- kernelSelect(data = DATA[[i]],  kernel = kernels[i],w=w[[i]],h=h[i])
+  for(i in 1:m) K[,,i] <- kernelSelect(data = DATA[[i]],domain=domain, kernel = kernels[i], h=h[i])
   return(K)
 }
 

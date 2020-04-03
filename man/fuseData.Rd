@@ -4,8 +4,7 @@
 \alias{fuseData}
 \title{Fuse Data}
 \usage{
-fuseData(DATA, coeff = "mean", kernels, w = NULL, y = NULL,
-  h = NULL)
+fuseData(DATA, coeff = "mean", kernels, h = NULL)
 }
 \arguments{
 \item{DATA}{A list of the *m* data to fuse}
@@ -15,10 +14,6 @@ or length(m) - 1 if the last coefficient is 1 - sum(coeff).
 If absent,  all data is considered equally important.}
 
 \item{kernels}{A vector of length *m* with the kernels to use in each data}
-
-\item{w}{Only if "wqJac" is chosen: variable weights}
-
-\item{y}{Only if "wqJac" is chosen: response variable}
 
 \item{h}{Kernel hyperparameter (gamma)}
 }
@@ -32,6 +27,6 @@ Fuse Data
 d <- list()
 d[[1]] <- matrix(abs(rnorm(20)),nrow=4,ncol=5)
 d[[2]] <- matrix(abs(rnorm(20)),nrow=4,ncol=5)
-fuseData(DATA=d,kernel=c("qJac","cRBF"))
-fuseData(DATA=d,kernel=c("qJac","cRBF"),coeff=c(0.9,0.1))
+fuseData(DATA=d,kernel=c("jac","crbf"))
+fuseData(DATA=d,kernel=c("jac","crbf"),coeff=c(0.9,0.1))
 }

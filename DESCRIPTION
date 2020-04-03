@@ -13,20 +13,21 @@ Encoding: UTF-8
 LazyData: true
 Depends: R(>= 3.4)
 Imports: 
-    catkern,
     corrplot,
     ggplot2,
     graphics,
     kernlab,
     metagenomeSeq,
     methods,
+    philentropy,
+    polynom,
     quadprog,
     robCompositions,
-    ROSE,
-    unbalanced
+    unbalanced,
+    vegan
 Suggests: 
     knitr,
     rmarkdown,
     testthat (>= 2.1.0)
 VignetteBuilder: knitr
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.0
