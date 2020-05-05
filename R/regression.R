@@ -26,7 +26,7 @@
 #' @param E Epsilon hyperparameter, or a vector with the possible epsilons to evaluate via k-Cross-Val.
 #' @param k The k for the k-Cross Validation. Minimum k = 2. If no argument is provided cross-validation is not performed.
 #' @param domain Only used in "frbf" or "flin".
-#' @return NMSE (normalized mean squared error)
+#' @return NMSE (normalized mean squared error), chosen hyperparameters, test set predicted and observed values, and variable importances (only with linear-like kernels)
 #' @examples
 #' # Simple regression without tuning the hyperparameters
 #' regress(data=soil$abun,soil$metadata$ph,kernel="clin")
@@ -34,6 +34,13 @@
 #' regress(data=soil$abun,soil$metadata$ph,kernel="clin",p=0.6)
 #' # Regression with 10-Cross-Validation to choose the best Cost and Epsilon:
 #' regress(data=soil$abun,soil$metadata$ph,kernel="clin", C=c(0.1,1,10), E = c(0.01,0.1), k=10)
+#' # Regression with MKL:
+#' Nose <- list()
+#' Nose$left <- CSSnorm(smoker$abund[seq(from=1,to=nrow(smoker$abund),by=4),])
+#' Nose$right <- CSSnorm(smoker$abund[seq(from=2,to=nrow(smoker$abund),by=4),])
+#' age <- smoker$metadata$age[seq(from=1,to=62*4,by=4)]
+#' w <- matrix(c(0.5,0.1,0.9,0.5,0.9,0.1),nrow=3,ncol=2)
+#' regress(data=Nose,kernel="jac",y=age,C=c(1,10,100), coeff = w, k=10)
 #' @importFrom kernlab alpha alphaindex as.kernelMatrix kernelMatrix predict rbfdot SVindex
 #' @importFrom methods hasArg
 #' @export
@@ -41,25 +48,17 @@
 regress <- function(data, y,  coeff="mean",  kernel, p=0.2,  C=1, H=NULL, E=0.01, domain=NULL, k) {
 
   ### Checking data
-  check <- checkinput(data,y,kernel)
+  check <- checkinput(data,kernel)
   m <- check$m
   data <- check$data
   kernel <- check$kernel
 
+  if(length(y) != check$n) stop("Length of the target variable do not match with the row number of predictors")
+
   # 1. TR/TE
-  if((length(p) == 1) && (p < 1)) { ### p és sa proporció de test.
-    if(p<=0) stop("A test partition is mandatory")
-    index <- finalTRTE(data,1-p)
-    learn.indexes <- index$li
-    test.indexes <- index$ti
-  } else {                #### els índexs de test són entrats de forma manual
-    if(class(p)=="character") {
-      test.indexes <- which(rownames(data) %in% p)
-    } else {
-      test.indexes <- p
-    }
-    learn.indexes <- (1:nrow(data))[-test.indexes]
-  }
+  inds <- checkp(p=p,data=data)
+  learn.indexes <- inds$learn.indexes
+  test.indexes <- inds$test.indexes
 
   try <- y[learn.indexes]
   tey <- y[test.indexes]
@@ -88,17 +87,17 @@ regress <- function(data, y,  coeff="mean",  kernel, p=0.2,  C=1, H=NULL, E=0.01
         } else {
           d <- aperm(trMatrix,c(3,1,2))
           x <- lapply(seq_len(nrow(d)), function(i) d[i,,]) ## transformar en llista
-          coeff <- umkl(X=x,method=coeff,...)
+          coeff <- umkl(X=x,method=coeff)
         }
       }
       bh <- kCV.MKL(ARRAY=trMatrix, COEFF=coeff, KERNH=H, kernels=kernel, method="svr", COST = C,EPS = E,
-                     Y=try, k=k,  R=1)
+                     Y=try, k=k,  R=k)
       coeff <- bh$coeff ##indexs
       conserv <- c("coeff","cost","error")
       if(!is.null(H)) conserv <- c(conserv,"h")
       bh <- bh[conserv]
     } else {
-      bh <- kCV.core(H = H, method="svr", kernel=kernel,EPS = E, COST = C, K=trMatrix, Y=try, k=k, R=1)
+      bh <- kCV.core(H = H, method="svr", kernel=kernel,EPS = E, COST = C, K=trMatrix, Y=try, k=k, R=k)
     }
     eps <- bh$eps
     cost <- bh$cost
@@ -136,30 +135,11 @@ regress <- function(data, y,  coeff="mean",  kernel, p=0.2,  C=1, H=NULL, E=0.01
 
   ##### Importances (only linear)
 
-  if(identical(unique(kernel), "lin")) {
-    alphaids <- alphaindex(model) # Indices of SVs in original data
-    alphaids <-  learn.indexes[unlist(alphaids)]
-    alphas <- alpha(model)
-    alphas <- unlist(alphas)
-    ys <-  as.numeric(y[alphaids])
+  alphaids <- alphaindex(model) # Indices of SVs in original data
+  alphaids <-  learn.indexes[unlist(alphaids)]
+  alphas <- alpha(model)
 
-      if(m>1) {
-        coeff <- array(rep(coeff,each=length(data)/m),dim=dim(data))
-        cosn <-  apply(data^2,3L,rowSums) ## cosine normalization
-        cosn <- array(rep(cosn,each=dim(data)[2]),dim=c(dim(data)[2],dim(data)[1],dim(data)[3]))
-        cosn <- aperm(cosn,c(2,1,3))
-        svmatrix <- coeff * data * 1/(sqrt(cosn))
-        svmatrix <- t(apply(svmatrix, 1L, c))
-        svmatrix <- as.matrix(svmatrix[alphaids, ])
-
-      } else {
-        svmatrix <- as.matrix(data[alphaids, ])
-        svmatrix <-  sqrt(svmatrix /rowSums(svmatrix^2))  ### cosine normalization
-      }
-      importances  <- (colSums( matrix((ys * alphas),ncol=ncol(svmatrix),nrow=length(ys)) * svmatrix))^2
-  } else {
-    importances <- NULL
-  }
+  importances <- impCore(kernel=kernel,alphas=alphas,alphaids=alphaids,data=data,ys=as.numeric(y[alphaids]), m=m, coeff=coeff)
 
   # 5. Prediction
   teMatrix <- teMatrix[,SVindex(model),drop=FALSE]

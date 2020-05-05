@@ -24,8 +24,10 @@ hklust(
 
 \item{comb}{If data is a list or array: how to combine them ("mean","statis","full","sparse" or a vector of coefficients)}
 
-\item{kernel}{"linear" for linear kernel, "rbf" for RBF, "cRBF" for clrRBF, "qJac" for quantitative Jaccard.
-"matrix" if a pre-calculated kernel matrix is given as input.}
+\item{kernel}{"lin" or rbf" to standard Linear and RBF kernels. "clin" for compositional linear and "crbf" for Aitchison-RBF
+kernels. "jac" for quantitative Jaccard / Ruzicka kernel. "jsk" for Jensen-Shannon Kernel. "flin" and "frbf" for functional linear
+and functional RBF kernels. "matrix" if a pre-computed kernel matrix is given as input.
+With an array or a list of length *m*: Vector of *m* kernels to apply to each dataset.}
 
 \item{H}{Kernel gamma hyperparameter if needed (only RBF-like kernels)}
 
@@ -54,5 +56,11 @@ An object of class hclust with or without a plot of the cluster dendogram
 Hierarchical clustering
 }
 \examples{
-hklust(soil$abund,kernel="jac", title = "Soil data cluster dendogram",cut=3,colors=2:4)
+## Simple case
+hklust(soil$abund,kernel="clin", title = "Soil data cluster dendogram",labels=TRUE)
+## Spatial data fusion case
+Nose <- list()
+Nose$left <- CSSnorm(smoker$abund[seq(from=1,to=nrow(smoker$abund),by=4),])
+Nose$right <- CSSnorm(smoker$abund[seq(from=2,to=nrow(smoker$abund),by=4),])
+hklust(data=Nose,kernel=rep("jac",2),title="Nose samples",cut=2,colors=c("black","red"))
 }

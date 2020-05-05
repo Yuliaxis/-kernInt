@@ -4,28 +4,43 @@
 \alias{outliers}
 \title{SVM outlier detection / one class SVM}
 \usage{
-outliers(data, y, kernel, nu = 0.2, p = 0.2, k, domain = NULL, H = NULL)
+outliers(
+  data,
+  y = NULL,
+  kernel,
+  coeff,
+  nu = 0.2,
+  p = 0.2,
+  k,
+  domain = NULL,
+  H = NULL
+)
 }
 \arguments{
 \item{data}{Input data: a matrix or data.frame with predictor variables/features as columns.
 To perform MKL: a list of *m* datasets. All datasets should have the same number of rows}
 
-\item{y}{Reponse variable (factor)}
+\item{y}{Reponse variable (continuous)}
 
 \item{kernel}{"lin" or rbf" to standard Linear and RBF kernels. "clin" for compositional linear and "crbf" for Aitchison-RBF
 kernels. "jac" for quantitative Jaccard / Ruzicka kernel. "jsk" for Jensen-Shannon Kernel. "flin" and "frbf" for functional linear
 and functional RBF kernels. "matrix" if a pre-computed kernel matrix is given as input.
 To perform MKL: Vector of *m* kernels to apply to each dataset.}
 
+\item{coeff}{ONLY IN MKL CASE: A *t·m* matrix of the coefficients, where *m* are the number of different data types and *t* the number of
+different coefficient combinations to evaluate via k-CV. If absent, the same weight is given to all data sources.}
+
 \item{nu}{Hyperparameter nu}
 
-\item{p}{If a value for y is provided, p is the proportion of total data instances in the test set}
+\item{p}{The proportion of data reserved for the test set. Otherwise, a vector containing the indexes or the names of the rows for testing.}
 
-\item{k}{The k for the k-Cross Validation. Minimum k = 2.}
+\item{k}{The k for the k-Cross Validation. Minimum k = 2. If no argument is provided cross-validation is not performed.}
 
 \item{domain}{Only used in "frbf" or "flin".}
 
-\item{H}{Hyperparameter gamma}
+\item{H}{Gamma hyperparameter (only in RBF-like functions). A vector with the possible values to chose the best one via k-Cross-Val can be entered.
+For the MKL, a list with *m* entries can be entered, being' *m* is the number of different data types. Each element on the list
+must be a number or, if k-Cross-Validation is needed, a vector with the hyperparameters to evaluate for each data type.}
 }
 \value{
 The indexes of the outliers (outlier detection) or, if a value is provided for y, the confusion matrix (one-class SVM)

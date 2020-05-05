@@ -6,6 +6,7 @@
 \usage{
 kernPCA(
   data,
+  comb = "mean",
   kernel,
   plot = TRUE,
   H = NULL,
@@ -22,8 +23,12 @@ kernPCA(
 \arguments{
 \item{data}{Input data: a matrix or data.frame.}
 
-\item{kernel}{"linear" for linear kernel, "rbf" for RBF, "cRBF" for clrRBF, "qJac" for quantitative Jaccard.
-"matrix" if a pre-calculated kernel matrix is given as input.}
+\item{comb}{If data is a list or array: how to combine them ("mean","statis","full","sparse" or a vector of coefficients)}
+
+\item{kernel}{lin" or rbf" to standard Linear and RBF kernels. "clin" for compositional linear and "crbf" for Aitchison-RBF
+kernels. "jac" for quantitative Jaccard / Ruzicka kernel. "jsk" for Jensen-Shannon Kernel. "flin" and "frbf" for functional linear
+and functional RBF kernels. "matrix" if a pre-computed kernel matrix is given as input.
+With an array or a list of length *m*: Vector of *m* kernels to apply to each dataset.}
 
 \item{plot}{TRUE to return the plot, FALSE to return the projection object}
 
@@ -52,6 +57,12 @@ A  k-PCA plot generated with ggplot2.
 kernel PCA
 }
 \examples{
-kernPCA(soil$abund,kernel="clin", y=soil$metadata$phd, colors=c("aquamarine2","orchid3"),
+kernPCA(soil$abund,kernel="clin", y=soil$metadata$phd, colors=c("orange","orchid3"),
 title = "Soil kernel PCA",legend = TRUE)
+## Heterogeneous data fusion case
+Airway <- list()
+Airway$nosel <- CSSnorm(smoker$abund[seq(from=1,to=nrow(smoker$abund),by=4),])
+Airway$throatl <- CSSnorm(smoker$abund[seq(from=3,to=nrow(smoker$abund),by=4),])
+smoking <- smoker$metadata$smoker[seq(from=1,to=62*4,by=4)]
+kernPCA(data=Airway,kernel=rep("jac",2),title="Airway samples",y=smoking)#' @import ggplot2
 }

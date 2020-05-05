@@ -10,15 +10,19 @@
 #'
 #' @param data Input data: a matrix or data.frame with predictor variables/features as columns.
 #' To perform MKL: a list of *m* datasets. All datasets should have the same number of rows
-#' @param y Reponse variable (factor)
+#' @param y Reponse variable (continuous)
 #' @param kernel "lin" or rbf" to standard Linear and RBF kernels. "clin" for compositional linear and "crbf" for Aitchison-RBF
 #' kernels. "jac" for quantitative Jaccard / Ruzicka kernel. "jsk" for Jensen-Shannon Kernel. "flin" and "frbf" for functional linear
 #' and functional RBF kernels. "matrix" if a pre-computed kernel matrix is given as input.
 #' To perform MKL: Vector of *m* kernels to apply to each dataset.
+#' @param coeff ONLY IN MKL CASE: A *t·m* matrix of the coefficients, where *m* are the number of different data types and *t* the number of
+#' different coefficient combinations to evaluate via k-CV. If absent, the same weight is given to all data sources.
+#' @param p The proportion of data reserved for the test set. Otherwise, a vector containing the indexes or the names of the rows for testing.
+#' @param H Gamma hyperparameter (only in RBF-like functions). A vector with the possible values to chose the best one via k-Cross-Val can be entered.
+#' For the MKL, a list with *m* entries can be entered, being' *m* is the number of different data types. Each element on the list
+#' must be a number or, if k-Cross-Validation is needed, a vector with the hyperparameters to evaluate for each data type.
 #' @param nu Hyperparameter nu
-#' @param p If a value for y is provided, p is the proportion of total data instances in the test set
-#' @param k The k for the k-Cross Validation. Minimum k = 2.
-#' @param H Hyperparameter gamma
+#' @param k The k for the k-Cross Validation. Minimum k = 2. If no argument is provided cross-validation is not performed.
 #' @param domain Only used in "frbf" or "flin".
 #' @return The indexes of the outliers (outlier detection) or, if a value is provided for y, the confusion matrix (one-class SVM)
 #' @examples
@@ -34,65 +38,107 @@
 
 
 
-outliers <- function(data,y,kernel,nu=0.2,p=0.2,k,domain=NULL,H=NULL) {
+outliers <- function(data,y=NULL, kernel, coeff, nu=0.2,p=0.2,k,domain=NULL,H=NULL) {
 
-  if(hasArg(y)) y <- as.factor(y)
+  ### Checking data
+  check <- checkinput(data,kernel)
+  m <- check$m
+  data <- check$data
+  kernel <- check$kernel
 
-  if(class(data) == "list") {
-    m <- length(data)
-    if(m < 2) data <- unlist(data)
-  } else if(class(data) == "array") {
-    m <- dim(data)[3]
-    if(m < 2) data <- unlist(data)
-    data <- matrix(data[,,1],ncol=dim(data)[2],nrow=dim(data)[1])
-  } else if(class(data) == "data.frame" | class(data) == "matrix") {
-    m <- 1
-  } else {
-    stop("Wrong input data class.")
-  }
+  # 2. Compute kernel matrix
 
-  Jmatrix <- kernelSelect(kernel,data,domain,h=NULL)
+  Jmatrix<- seqEval(DATA=data,domain=domain, kernels=kernel,h=NULL) ## Sense especificar hiperparàmetre.
 
   if(hasArg(y)){
-    index <- finalTRTE(data,1-p) ## data és una matriu en aquest cas. passar-ho a MKL.
-    learn.indexes <- index$li
-    test.indexes <- index$ti
+    if(length(y) != check$n) stop("Length of the target variable do not match with the row number of predictors")
+    y <- as.factor(y)
 
-    trMatrix <- Jmatrix[learn.indexes,learn.indexes]
-    teMatrix <- Jmatrix[test.indexes,learn.indexes]
+    inds <- checkp(p=p,data=data)
+    learn.indexes <- inds$learn.indexes
+    test.indexes <- inds$test.indexes
 
-    if(hasArg(k)) {
-      if(k<2) stop("k must be equal to or higher than 2")
-      bh <- kCV.core(method="one",K=trMatrix,  kernel=kernel,Y=y[learn.indexes], NU=nu, H=H, k=k, R=k)
-      nu <- bh$nu
-      H <- bh$h
-      print(c(nu,H))
+    try <- y[learn.indexes]
+    tey <- y[test.indexes]
+
+
+    if(m>1) {
+      Jmatrix<- seqEval(DATA=data,domain=domain, kernels=kernel,h=NULL) ## Sense especificar hiperparàmetre.
+      trMatrix <- Jmatrix[learn.indexes,learn.indexes,]
+      teMatrix <- Jmatrix[test.indexes,learn.indexes,]
     } else {
-      if(length(nu)>1) paste("Nu length > 1 but not k provided - Only the first element will be used")
-      nu <- nu[1]
-      if(length(H)>1) paste("Gamma length > 1 but not k provided - Only the first element will be used")
-      H <- H[1]
+      Jmatrix <- kernelSelect(kernel=kernel,domain=domain,data=data,h=NULL)
+      trMatrix <- Jmatrix[learn.indexes,learn.indexes]
+      teMatrix <- Jmatrix[test.indexes,learn.indexes]
     }
 
-    trMatrix <- hyperkSelection(trMatrix,h=H,kernel=kernel)
-    teMatrix <- hyperkSelection(teMatrix,h=H,kernel=kernel)
+    if(hasArg(k)) {
+      if(k<2) stop("k should be equal to or higher than 2")
+      if(m>1)  {
+        if(class(coeff) == "character") {
+          if(coeff == "mean") {
+            coeff <- rep(1/m,m)
+          } else {
+            d <- aperm(trMatrix,c(3,1,2))
+            x <- lapply(seq_len(nrow(d)), function(i) d[i,,]) ## transformar en llista
+            coeff <- umkl(X=x,method=coeff)
+          }
+        }
+        bh <- kCV.MKL(ARRAY=trMatrix, COEFF=coeff, KERNH=H, kernels=kernel, method="one-svc", NU = nu,
+                      Y=try, k=k, R=k)
+        coeff <- bh$coeff ##indexs
+        conserv <- c("coeff","nu","error")
+        if(!is.null(H)) conserv <- c(conserv,"h")
+        bh <- bh[conserv]
+      } else {
+        bh <- kCV.core(method="one-svc",NU = nu, H = H, kernel=kernel, K=trMatrix,
+                       Y=try, k=k, R=k)
+        bh <- bh[-which(is.na(bh))]
+      }
+      nu <- bh$nu
+      H <- bh$h
+
+    } else {
+      if(!is.null(H))   {
+        H <- kernHelp(H)$hyp
+        bh <- data.frame(H)
+      } else {
+        bh <- NULL
+      }
+      if(length(nu)>1) warning("Multiple nu and no k provided - Only the first element will be used")
+      nu <- nu[1]
+      if(m>1)   {
+        bh <- list(coeff=coeff,h=H,nu=nu)
+      }  else {
+        bh <- cbind(bh,nu)
+      }
+    }
+
+
+    if(m>1) {
+      for(j in 1:m) trMatrix[,,j] <- hyperkSelection(K=trMatrix[,,j], h=H[j],  kernel=kernel[j])
+      for(j in 1:m) teMatrix[,,j] <- hyperkSelection(K=teMatrix[,,j], h=H[j],  kernel=kernel[j])
+      trMatrix <- KInt(data=trMatrix,coeff=coeff)
+      teMatrix <- KInt(data=teMatrix,coeff=coeff)
+    }  else {
+      trMatrix <- hyperkSelection(trMatrix,h=H,kernel=kernel)
+      teMatrix <- hyperkSelection(teMatrix,h=H,kernel=kernel)
+    }
 
     model <- ksvm(trMatrix,nu=nu, type="one-svc", kernel="matrix")
 
     teMatrix <- teMatrix[,SVindex(model),drop=FALSE]
     teMatrix <- as.kernelMatrix(teMatrix)
     pred <- kernlab::predict(model,teMatrix)
-
-    pred <- as.factor(as.numeric(pred))
-    levels(pred) <- c("0","1")
-
-    ct <- table(Truth=y[test.indexes], Pred=pred)
-    return(ct)
-
+    pred <- as.factor(pred)
+    levels(pred) <- levels(y)
+    ct <- table(Truth=tey, Pred=pred)  ### Confusion matrix
+    test <- data.frame(true=tey,predicted=pred)
+    return(list("conf.matrix"=ct,"hyperparam"=bh,"prediction"=test))
   } else {
     model <- ksvm(Jmatrix,nu=nu, type="one-svc", kernel="matrix")
     get_index <- kernlab::predict(model)
-    return(which(get_index[,1]==TRUE))
+    return(which(get_index[,1]))
   }
 }
 

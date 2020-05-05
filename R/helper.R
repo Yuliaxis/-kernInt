@@ -14,7 +14,7 @@ expand.grid.mod <- function(x, rep) { # x is a vector
 
 # Check input data
 #' @keywords internal
-checkinput <- function(data,y, kernel) {
+checkinput <- function(data, kernel) {
 
   if(class(data) == "list") {
     m <- length(data)
@@ -24,6 +24,7 @@ checkinput <- function(data,y, kernel) {
       if(unique(sapply(data,class)) != "lsq") {
       ## Comprova tots els elements tenen el mateix nombre de files
       n <- unique(sapply(data,nrow))
+      data <- sapply(data,function(x)return(x),simplify = "array") #simplifica a array si se pot
       } else {
         n <- rep(0,m)
         for(x in 1:m) {
@@ -48,13 +49,11 @@ checkinput <- function(data,y, kernel) {
     stop("Wrong input data class.")
   }
 
-  if(length(y) != n) stop("Length of the target variable do not match with the row number of predictors")
-
   if(length(kernel)>m) stop("kernel argument is longer than number of different datasets")
 
   if(length(kernel)<m) kernel <- rep(kernel,ceiling(m/length(kernel)))[1:(m)]
 
-  return(list(data=data,m=m,kernel=kernel))
+  return(list(data=data,m=m,n=n,kernel=kernel))
 }
 
 #Training indexes
@@ -74,21 +73,21 @@ ids.list <- function(x) {
   if(is.null(is)) is <- 1:nrow(x[[1]])
   return(as.factor(is))
 }
+ids.lsq <- function(x) {
+  return(ids.default(x$coef))
+}
 ids.array <- function(x) {
   is <- dimnames(x)[[1]]
   if(is.null(is)) is <- 1:nrow(x)
   return(as.factor(is))
 }
-ids.data.frame <- function(x) {
+ids.default <- function(x) {
+  print(x)
   is <-  rownames(x)
   if(is.null(is)) is <- 1:nrow(x)
   return(as.factor(is))
 }
-ids.matrix <- function(x) {
-  is <- rownames(x)
-  if(is.null(is))  is <- 1:nrow(x)
-  return(as.factor(is))
-}
+
 
 #Final tr and test indices
 #' @keywords internal
@@ -141,6 +140,24 @@ longTRTE <- function(data,plong) {
   return(list(li=learn.indexes,ti=test.indexes))
 }
 
+# Wrapper training test
+#' @keywords internal
+checkp <- function(p,data) {
+  if((length(p) == 1) && (p < 1)) { ### p és sa proporció de test.
+    if(p<=0) stop("A test partition is mandatory")
+    index <- finalTRTE(data,1-p)
+    learn.indexes <- index$li
+    test.indexes <- index$ti
+  } else {                #### els índexs de test són entrats de forma manual
+    if(class(p)=="character") {
+      test.indexes <- which(rownames(data) %in% p)
+    } else {
+      test.indexes <- p
+    }
+    learn.indexes <- (1:nrow(data))[-test.indexes]
+  }
+  return(list(learn.indexes=learn.indexes,test.indexes=test.indexes))
+}
 
 # Class imbalance: data approach
 #' @keywords internal
@@ -221,4 +238,59 @@ hyperkSelection <- function(K, h, kernel) {
     Kmatrix <- K
   }
   return(Kmatrix)
+}
+
+
+## Importances of a given model (core)
+#' @keywords internal
+#'
+
+impCore <- function(kernel,alphaids,alphas,data,ys,coeff,m) {
+  alphas <- unlist(alphas)
+  if(all(grepl("lin", kernel))) {
+    clr <- which(kernel=="clin")
+    if(class(data)=="array") { ### combined importances
+      if(length(clr)>0) for(i in clr) data[,,i] <- clr(data[,,i])
+        coeff <- array(rep(coeff,each=length(data)/m),dim=c(dim(data)[1],dim(data)[2],dim(data)[3]))
+        cosn <-  apply(data^2,3L,rowSums) ## cosine normalization
+        cosn <- array(rep(cosn,each=dim(data)[2]),dim=c(dim(data)[2],dim(data)[1],dim(data)[3]))
+        cosn <- aperm(cosn,c(2,1,3))
+        svmatrix <- coeff * data * 1/(sqrt(cosn))
+        svmatrix <- t(apply(svmatrix, 1L, rowSums))
+        svmatrix <- as.matrix(svmatrix[alphaids, ])
+        importances  <- abs(colSums( matrix((ys * alphas),ncol=ncol(svmatrix),nrow=length(ys)) * svmatrix))
+      } else if(class(data)=="list" || class(data)=="lsq"){
+        importances <- NULL
+      } else {
+        if(length(clr)>0) data <- clr(data)
+        svmatrix <- as.matrix(data[alphaids, ])
+        svmatrix <- svmatrix /sqrt(rowSums(svmatrix^2))  ### cosine normalization
+        importances  <- abs(colSums( matrix((ys * alphas),ncol=ncol(svmatrix),nrow=length(ys)) * svmatrix))
+      }
+    }  else {
+    importances <- NULL
+  }
+  return(importances)
+}
+
+## Importances of a given model (classification)
+#' @keywords internal
+
+imp2Class <- function(kernel,alphaids,alphas,data,ys,coeff,m) {
+  ys <- droplevels(ys)
+  ys <- as.numeric(ys[alphaids])
+  ys[ys==min(ys)] <- 1
+  ys[ys==max(ys)] <- -1
+  return(impCore(kernel=kernel,alphaids=alphaids,alphas=alphas,data=data,ys=ys,coeff=coeff,m=m) )
+}
+
+impClass <- function(kernel,alphaids,alphas,data,ys,ids,coeff,m) {
+  q <- length(alphaids)
+  onevsone <- vector(length=q,mode="list")
+  name  <- expand.grid.mod(levels(ys),rep=FALSE)
+  for(i in 1:q) {
+    onevsone[[i]] <- imp2Class(kernel=kernel,alphaids=ids[ alphaids[[i]] ],alphas=alphas[[i]],data=data,ys=ys,coeff=coeff,m=m)
+  }
+  names(onevsone) <- paste(name[,1],name[,2],sep=".")
+  return(onevsone)
 }

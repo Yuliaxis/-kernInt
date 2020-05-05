@@ -33,7 +33,7 @@ CSSnorm <- function(data) {
 #'
 
 clr <- function(data) {
-  minv <- min(  data[data!=min(data)] )
+  minv <- min(  data[data!=0] )
   minv <- minv/10
   return(cenLR(data+minv)$x.clr)
 }

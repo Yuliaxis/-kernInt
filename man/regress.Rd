@@ -46,7 +46,7 @@ must be a number or, if k-Cross-Validation is needed, a vector with the hyperpar
 \item{k}{The k for the k-Cross Validation. Minimum k = 2. If no argument is provided cross-validation is not performed.}
 }
 \value{
-NMSE (normalized mean squared error)
+NMSE (normalized mean squared error), chosen hyperparameters, test set predicted and observed values, and variable importances (only with linear-like kernels)
 }
 \description{
 regress() automatically trains a Support Vector Regression model, tests it and returns the Normalized Mean Squared Error.
@@ -63,4 +63,11 @@ regress(data=soil$abun,soil$metadata$ph,kernel="clin")
 regress(data=soil$abun,soil$metadata$ph,kernel="clin",p=0.6)
 # Regression with 10-Cross-Validation to choose the best Cost and Epsilon:
 regress(data=soil$abun,soil$metadata$ph,kernel="clin", C=c(0.1,1,10), E = c(0.01,0.1), k=10)
+# Regression with MKL:
+Nose <- list()
+Nose$left <- CSSnorm(smoker$abund[seq(from=1,to=nrow(smoker$abund),by=4),])
+Nose$right <- CSSnorm(smoker$abund[seq(from=2,to=nrow(smoker$abund),by=4),])
+age <- smoker$metadata$age[seq(from=1,to=62*4,by=4)]
+w <- matrix(c(0.5,0.1,0.9,0.5,0.9,0.1),nrow=3,ncol=2)
+regress(data=Nose,kernel="jac",y=age,C=c(1,10,100), coeff = w, k=10)
 }

@@ -4,10 +4,7 @@ Title: Kernel Approach to Integration of Microbiome Analysis Methods & Data
 Version: 0.1.0
 Author: Elies Ramon
 Maintainer: Elies Ramon <elies.ramon@cragenomica.es>
-Description: kernInt aim is to integrate microbiome data of heterogeneous 
-    sources (metagenomics, metabolomics...) and, also, to use the kernel matrices
-    to unify the diverse approaches (visualization, clustering, prediction...)
-    used in the analysis of microbiome.
+Description: kernInt uses the kernel framework to unify supervised and unsupervised microbiome analyses, while paying special attention to spatial and temporal integration. 
 License: GPL (>=3)
 Encoding: UTF-8
 LazyData: true

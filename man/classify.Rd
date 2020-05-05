@@ -49,7 +49,7 @@ must be a number or, if k-Cross-Validation is needed, a vector with the hyperpar
 \item{domain}{Only used in "frbf" or "flin".}
 }
 \value{
-Confusion matrix or, if prob = TRUE and not cutoff is set, a data.frame with the class probability and the actual class.
+Confusion matrix, chosen hyperparameters, test set predicted and observed values, and variable importances (only with linear-like kernels)
 }
 \description{
 classify() automatically trains a Support Vector Classification model, tests it and returns the confusion matrix.
@@ -61,18 +61,29 @@ The classification can be hard (predicting the class) or soft (predicting the pr
 
 Another feature is the possibility to deal with imbalanced data in the target variable with several techniques:
 \describe{
-  \item{Data Resampling}{Oversampling techniques (oversample the minority class, generating synthetic data with SMOTE)
-  or undersampling the majority class.}
-  \item{Class weighting}{Giving more weight to the minority class}
+  \item{Data Resampling}{Oversampling techniques (oversample the minority class or undersample the majority class.}
+  \item{Class weighting}{Changing the class weighting accordint to their frequence in the training set}
 }
 To use one-class SVM to deal with imbalanced data, see: outliers()
 
 If the input data has repeated rownames, classify() will consider that the row names that share id are repeated
 measures from the same individual. The function will ensure that all repeated measures are used either to train
 or to test the model, but not for both, thus preserving the independance between the training and tets sets.
-
-Currently, the classification can be only performed if the target variable is binary (two classes).
 }
 \examples{
+# Simple classification
 classify(data=soil$abund ,y=soil$metadata[ ,"env_feature"],kernel="clin")
+# Cassification with MKL:
+Nose <- list()
+Nose$left <- CSSnorm(smoker$abund[seq(from=1,to=nrow(smoker$abund),by=4),])
+Nose$right <- CSSnorm(smoker$abund[seq(from=2,to=nrow(smoker$abund),by=4),])
+smoking <- smoker$metadata$smoker[seq(from=1,to=62*4,by=4)]
+w <- matrix(c(0.5,0.1,0.9,0.5,0.9,0.1),nrow=3,ncol=2)
+classify(data=Nose,kernel="jac",y=smoking,C=c(1,10,100), coeff = w, k=10)
+# Cassification with longitudinal data:
+growth2 <- growth[,2:3]
+colnames(growth2) <-  c( "time", "height")
+growth_coeff <- lsq(data=growth2,degree=2)
+sex <- growth[seq(from=1,to=nrow(growth),by=8),1]
+classify(data=growth_coeff,kernel="frbf",H=0.0001, y=sex, domain=c(11,18))
 }

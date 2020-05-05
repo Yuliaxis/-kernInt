@@ -3,8 +3,10 @@
 
 #' Hierarchical clustering
 #' @param data Input data
-#' @param kernel "linear" for linear kernel, "rbf" for RBF, "cRBF" for clrRBF, "qJac" for quantitative Jaccard.
-#' "matrix" if a pre-calculated kernel matrix is given as input.
+#' @param kernel  "lin" or rbf" to standard Linear and RBF kernels. "clin" for compositional linear and "crbf" for Aitchison-RBF
+#' kernels. "jac" for quantitative Jaccard / Ruzicka kernel. "jsk" for Jensen-Shannon Kernel. "flin" and "frbf" for functional linear
+#' and functional RBF kernels. "matrix" if a pre-computed kernel matrix is given as input.
+#' With an array or a list of length *m*: Vector of *m* kernels to apply to each dataset.
 #' @param comb If data is a list or array: how to combine them ("mean","statis","full","sparse" or a vector of coefficients)
 #' @param H Kernel gamma hyperparameter if needed (only RBF-like kernels)
 #' @param domain Only used in "frbf" or "flin".
@@ -19,7 +21,13 @@
 #' @param colors border color(s) for the rectangles.
 #' @return An object of class hclust with or without a plot of the cluster dendogram
 #' @examples
-#' hklust(soil$abund,kernel="jac", title = "Soil data cluster dendogram",cut=3,colors=2:4)
+#' ## Simple case
+#' hklust(soil$abund,kernel="clin", title = "Soil data cluster dendogram",labels=TRUE)
+#' ## Spatial data fusion case
+#' Nose <- list()
+#' Nose$left <- CSSnorm(smoker$abund[seq(from=1,to=nrow(smoker$abund),by=4),])
+#' Nose$right <- CSSnorm(smoker$abund[seq(from=2,to=nrow(smoker$abund),by=4),])
+#' hklust(data=Nose,kernel=rep("jac",2),title="Nose samples",cut=2,colors=c("black","red"))
 #' @importFrom stats as.dist hclust cutree rect.hclust
 #' @export
 
@@ -45,8 +53,11 @@ hklust <- function(data, comb="mean", kernel, H=NULL, domain=NULL, method="ward.
 
 #' kernel PCA
 #' @param data Input data: a matrix or data.frame.
-#' @param kernel "linear" for linear kernel, "rbf" for RBF, "cRBF" for clrRBF, "qJac" for quantitative Jaccard.
-#' "matrix" if a pre-calculated kernel matrix is given as input.
+#' @param kernel lin" or rbf" to standard Linear and RBF kernels. "clin" for compositional linear and "crbf" for Aitchison-RBF
+#' kernels. "jac" for quantitative Jaccard / Ruzicka kernel. "jsk" for Jensen-Shannon Kernel. "flin" and "frbf" for functional linear
+#' and functional RBF kernels. "matrix" if a pre-computed kernel matrix is given as input.
+#' With an array or a list of length *m*: Vector of *m* kernels to apply to each dataset.
+#' @param comb If data is a list or array: how to combine them ("mean","statis","full","sparse" or a vector of coefficients)
 #' @param plot TRUE to return the plot, FALSE to return the projection object
 #' @param H Kernel gamma hyperparameter if needed (only RBF-like kernels)
 #' @param domain Only used in "frbf" or "flin".
@@ -59,15 +70,24 @@ hklust <- function(data, comb="mean", kernel, H=NULL, domain=NULL, method="ward.
 #' @param labels If true, each dot will be labeled with its row number.
 #' @return A  k-PCA plot generated with ggplot2.
 #' @examples
-#' kernPCA(soil$abund,kernel="clin", y=soil$metadata$phd, colors=c("aquamarine2","orchid3"),
+#' kernPCA(soil$abund,kernel="clin", y=soil$metadata$phd, colors=c("orange","orchid3"),
 #' title = "Soil kernel PCA",legend = TRUE)
-#' @import ggplot2
+#' ## Heterogeneous data fusion case
+#' Airway <- list()
+#' Airway$nosel <- CSSnorm(smoker$abund[seq(from=1,to=nrow(smoker$abund),by=4),])
+#' Airway$throatl <- CSSnorm(smoker$abund[seq(from=3,to=nrow(smoker$abund),by=4),])
+#' smoking <- smoker$metadata$smoker[seq(from=1,to=62*4,by=4)]
+#' kernPCA(data=Airway,kernel=rep("jac",2),title="Airway samples",y=smoking)#' @import ggplot2
 #' @importFrom  graphics plot
 #' @export
 
 
-kernPCA <- function(data, kernel, plot=TRUE,H=NULL,domain=NULL, y, dim=c(1,2), colors, na.col="grey70", title, legend = TRUE, labels=FALSE) {
-  matrix <- kernelSelect(data=data, kernel=kernel, h=H)
+kernPCA <- function(data, comb="mean",kernel, plot=TRUE,H=NULL,domain=NULL, y, dim=c(1,2), colors, na.col="grey70", title, legend = TRUE, labels=FALSE) {
+  if(class(data) == "list" | class(data) == "array" ) {
+    matrix <-fuseData(DATA=data,kernels=kernel,coeff=comb,h=H)
+  }  else  {
+    matrix <- kernelSelect(data=data, kernel=kernel, h=H)
+  }
   matrix <- kernlab::as.kernelMatrix(matrix)
   i <- dim[1]; j <- dim[2]
   subjects.kpca <- kernlab::kpca(matrix,  kernel = matrix)

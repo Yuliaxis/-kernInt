@@ -10,17 +10,14 @@
 #'
 #' Another feature is the possibility to deal with imbalanced data in the target variable with several techniques:
 #' \describe{
-#'   \item{Data Resampling}{Oversampling techniques (oversample the minority class, generating synthetic data with SMOTE)
-#'   or undersampling the majority class.}
-#'   \item{Class weighting}{Giving more weight to the minority class}
+#'   \item{Data Resampling}{Oversampling techniques (oversample the minority class or undersample the majority class.}
+#'   \item{Class weighting}{Changing the class weighting accordint to their frequence in the training set}
 #' }
 #' To use one-class SVM to deal with imbalanced data, see: outliers()
 #'
 #' If the input data has repeated rownames, classify() will consider that the row names that share id are repeated
 #' measures from the same individual. The function will ensure that all repeated measures are used either to train
 #' or to test the model, but not for both, thus preserving the independance between the training and tets sets.
-#'
-#' Currently, the classification can be only performed if the target variable is binary (two classes).
 #'
 #' @param data Input data: a matrix or data.frame with predictor variables/features as columns.
 #' To perform MKL: a list of *m* datasets. All datasets should have the same number of rows.
@@ -40,9 +37,23 @@
 #' For the MKL, a list with *m* entries can be entered, being' *m* is the number of different data types. Each element on the list
 #' must be a number or, if k-Cross-Validation is needed, a vector with the hyperparameters to evaluate for each data type.
 #' @param domain Only used in "frbf" or "flin".
-#' @return Confusion matrix or, if prob = TRUE and not cutoff is set, a data.frame with the class probability and the actual class.
+#' @return Confusion matrix, chosen hyperparameters, test set predicted and observed values, and variable importances (only with linear-like kernels)
 #' @examples
+#' # Simple classification
 #' classify(data=soil$abund ,y=soil$metadata[ ,"env_feature"],kernel="clin")
+#' # Cassification with MKL:
+#' Nose <- list()
+#' Nose$left <- CSSnorm(smoker$abund[seq(from=1,to=nrow(smoker$abund),by=4),])
+#' Nose$right <- CSSnorm(smoker$abund[seq(from=2,to=nrow(smoker$abund),by=4),])
+#' smoking <- smoker$metadata$smoker[seq(from=1,to=62*4,by=4)]
+#' w <- matrix(c(0.5,0.1,0.9,0.5,0.9,0.1),nrow=3,ncol=2)
+#' classify(data=Nose,kernel="jac",y=smoking,C=c(1,10,100), coeff = w, k=10)
+#' # Cassification with longitudinal data:
+#' growth2 <- growth[,2:3]
+#' colnames(growth2) <-  c( "time", "height")
+#' growth_coeff <- lsq(data=growth2,degree=2)
+#' sex <- growth[seq(from=1,to=nrow(growth),by=8),1]
+#' classify(data=growth_coeff,kernel="frbf",H=0.0001, y=sex, domain=c(11,18))
 #' @importFrom kernlab alpha alphaindex as.kernelMatrix kernelMatrix predict rbfdot SVindex
 #' @importFrom unbalanced ubBalance
 #' @importFrom methods hasArg
@@ -53,28 +64,19 @@
 classify <- function(data, y,  coeff="mean", kernel,  prob=FALSE, classimb, p=0.2, k, C=1, H=NULL, domain=NULL) {
 
   ### Checking data
-  check <- checkinput(data,y,kernel)
+  check <- checkinput(data,kernel)
   m <- check$m
   data <- check$data
   kernel <- check$kernel
 
   # y class
+  if(length(y) != check$n) stop("Length of the target variable do not match with the row number of predictors")
   diagn <- as.factor(y)
 
   # 1. TR/TE
-  if((length(p) == 1) && (p < 1)) { ### p és sa proporció de test.
-    if(p<=0) stop("A test partition is mandatory")
-    index <- finalTRTE(data,1-p)
-    learn.indexes <- index$li
-    test.indexes <- index$ti
-  } else {                #### els índexs de test són entrats de forma manual
-    if(class(p)=="character") {
-      test.indexes <- which(rownames(data) %in% p)
-    } else {
-      test.indexes <- p
-    }
-    learn.indexes <- (1:nrow(data))[-test.indexes]
-  }
+  inds <- checkp(p=p,data=data)
+  learn.indexes <- inds$learn.indexes
+  test.indexes <- inds$test.indexes
 
 
   # 2. Compute kernel matrix
@@ -169,37 +171,16 @@ classify <- function(data, y,  coeff="mean", kernel,  prob=FALSE, classimb, p=0.
 
   model <- ksvm(trMatrix, try, kernel="matrix", type="C-svc", prob.model = prob, C=cost, class.weights=wei)
 
-  ##### Importances (only linear)
-  importances <- NULL
+  ##### Importances (only linear and derived kernels)
 
-    if(identical(unique(kernel), "lin")) {
-      if(nlevels(y) == 2) {
-        alphaids <- alphaindex(model) # Indices of SVs in original data
-        alphaids <-  learn.indexes[unlist(alphaids)]
-        alphas <- alpha(model)
-        alphas <- unlist(alphas)
-        ys <-  as.numeric(y[alphaids])
-        ys[ys==2] <- -1
-
-        if(m>1) {
-          coeff <- array(rep(coeff,each=length(data)/m),dim=dim(data))
-          cosn <-  apply(data^2,3L,rowSums) ## cosine normalization
-          cosn <- array(rep(cosn,each=dim(data)[2]),dim=c(dim(data)[2],dim(data)[1],dim(data)[3]))
-          cosn <- aperm(cosn,c(2,1,3))
-          svmatrix <- coeff * data * 1/(sqrt(cosn))
-          svmatrix <- t(apply(svmatrix, 1L, c))
-          svmatrix <- as.matrix(svmatrix[alphaids, ])
-
-        } else {
-          svmatrix <- as.matrix(data[alphaids, ])
-          svmatrix <- svmatrix /sqrt(rowSums(svmatrix^2))  ### cosine normalization
-        }
-        importances  <- (colSums( matrix((ys * alphas),ncol=ncol(svmatrix),nrow=length(ys)) * svmatrix))^2
-      }  else {
-      print("not implemented")
-      }
-    }
-
+  alphaids <- alphaindex(model) # Indices of SVs in original data
+  alphas <- alpha(model)
+  if(nlevels(diagn) == 2) {
+    alphaids <-  learn.indexes[unlist(alphaids)]
+    importances <- imp2Class(kernel=kernel,alphaids=alphaids,alphas=alphas,data=data,ys=diagn, m=m, coeff=coeff)
+  } else{
+    importances <- impClass(kernel=kernel,alphaids=alphaids,alphas=alphas,ids=learn.indexes,data=data,ys=diagn, m=m, coeff=coeff)
+  }
 
   # 6. Prediction
 

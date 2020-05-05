@@ -255,7 +255,7 @@ RBFun <- function(data,h=NULL,domain) {
   K <- matrix(0,ncol=nrow(data),nrow=nrow(data))
   for(i in 1:nrow(ids)) K[ids[i,1],ids[i,2]] <- K[ids[i,2],ids[i,1]] <- Comp[i]
   rownames(K) <- colnames(K) <- rownames(data)
-  if(is.null(h) | h == 0 ) return(-K)
+  if(is.null(h) || h == 0 ) return(-K)
   return(exp(h*K))
 }
 
@@ -316,4 +316,6 @@ seqEval.list <- function(DATA,kernels,domain=NULL, h=NULL) {
   for(i in 1:m) K[,,i] <- kernelSelect(data = DATA[[i]],domain=domain, kernel = kernels[i], h=h[i])
   return(K)
 }
+
+seqEval.default <- function(DATA,kernels,domain=NULL, h=NULL) return(kernelSelect(data = DATA, domain = domain, kernel = kernels, h = h))
 

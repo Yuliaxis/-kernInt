@@ -147,7 +147,7 @@ A list containing:
 
 - `$hyperparam`: Hyperparameter values used to build the model and cross-validation errors, if applicable.
 
-- `$prediction`: Predicted and true values (test set). Rownames correspond to the indexes in the original data. If `prob=TRUE', the probability of each observation to belong to a given class.
+- `$prediction`: Predicted and true values (test set). Rownames correspond to the indexes in the original data. If `prob=TRUE`, the probability of each observation to belong to a given class.
 
 - `$var.imp`: The variable importance (e.g. microbial signature) if a linear or linear-like kernel is used.
 
