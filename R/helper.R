@@ -82,7 +82,6 @@ ids.array <- function(x) {
   return(as.factor(is))
 }
 ids.default <- function(x) {
-  print(x)
   is <-  rownames(x)
   if(is.null(is)) is <- 1:nrow(x)
   return(as.factor(is))

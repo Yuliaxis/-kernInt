@@ -281,7 +281,7 @@ kernelSelect <- function(kernel,data,domain=NULL,h=NULL) { #h és un hiperparàm
     return(clrLin(data=data))
   } else if(kernel == "crbf") {
     cat("Aitchison-RBF kernel\n")
-    return(clrRBF(data=data))
+    return(clrRBF(data=data,h=h))
   } else if(kernel == "flin") {
     cat("Functional Linear kernel \n")
     return(Kfun(data=data,domain=domain))
