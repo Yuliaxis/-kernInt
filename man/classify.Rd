@@ -75,12 +75,12 @@ or to test the model, but not for both, thus preserving the independance between
 classify(data=soil$abund ,y=soil$metadata[ ,"env_feature"],kernel="clin")
 # Cassification with MKL:
 Nose <- list()
-Nose$left <- CSSnorm(smoker$abund[seq(from=1,to=nrow(smoker$abund),by=4),])
-Nose$right <- CSSnorm(smoker$abund[seq(from=2,to=nrow(smoker$abund),by=4),])
+Nose$left <- CSSnorm(smoker$abund$nasL)
+Nose$right <- CSSnorm(smoker$abund$nasR)
 smoking <- smoker$metadata$smoker[seq(from=1,to=62*4,by=4)]
 w <- matrix(c(0.5,0.1,0.9,0.5,0.9,0.1),nrow=3,ncol=2)
 classify(data=Nose,kernel="jac",y=smoking,C=c(1,10,100), coeff = w, k=10)
-# Cassification with longitudinal data:
+# Classification with longitudinal data:
 growth2 <- growth[,2:3]
 colnames(growth2) <-  c( "time", "height")
 growth_coeff <- lsq(data=growth2,degree=2)

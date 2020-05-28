@@ -36,8 +36,8 @@
 #' regress(data=soil$abun,soil$metadata$ph,kernel="clin", C=c(0.1,1,10), E = c(0.01,0.1), k=10)
 #' # Regression with MKL:
 #' Nose <- list()
-#' Nose$left <- CSSnorm(smoker$abund[seq(from=1,to=nrow(smoker$abund),by=4),])
-#' Nose$right <- CSSnorm(smoker$abund[seq(from=2,to=nrow(smoker$abund),by=4),])
+#' Nose$left <- CSSnorm(smoker$abund$nasL)
+#' Nose$right <- CSSnorm(smoker$abund$nasR)
 #' age <- smoker$metadata$age[seq(from=1,to=62*4,by=4)]
 #' w <- matrix(c(0.5,0.1,0.9,0.5,0.9,0.1),nrow=3,ncol=2)
 #' regress(data=Nose,kernel="jac",y=age,C=c(1,10,100), coeff = w, k=10)
@@ -45,7 +45,7 @@
 #' @importFrom methods hasArg
 #' @export
 
-regress <- function(data, y,  coeff="mean",  kernel, p=0.2,  C=1, H=NULL, E=0.01, domain=NULL, k) {
+regress <- function(data, y,  coeff,  kernel, p=0.2,  C=1, H=NULL, E=0.01, domain=NULL, k) {
 
   ### Checking data
   check <- checkinput(data,kernel)
@@ -70,6 +70,7 @@ regress <- function(data, y,  coeff="mean",  kernel, p=0.2,  C=1, H=NULL, E=0.01
     Jmatrix<- seqEval(DATA=data,domain=domain, kernels=kernel,h=NULL) ## Sense especificar hiperparàmetre.
     trMatrix <- Jmatrix[learn.indexes,learn.indexes,]
     teMatrix <- Jmatrix[test.indexes,learn.indexes,]
+    if(!hasArg(coeff)) coeff <- rep(1/m,m)
   } else {
     Jmatrix <- kernelSelect(kernel=kernel,domain=domain,data=data,h=NULL)
     trMatrix <- Jmatrix[learn.indexes,learn.indexes]
@@ -81,15 +82,6 @@ regress <- function(data, y,  coeff="mean",  kernel, p=0.2,  C=1, H=NULL, E=0.01
   if(hasArg(k)) {
     if(k<2) stop("k should be equal to or higher than 2")
     if(m>1)  {
-      if(class(coeff) == "character") {
-        if(coeff == "mean") {
-          coeff <- rep(1/m,m)
-        } else {
-          d <- aperm(trMatrix,c(3,1,2))
-          x <- lapply(seq_len(nrow(d)), function(i) d[i,,]) ## transformar en llista
-          coeff <- umkl(X=x,method=coeff)
-        }
-      }
       bh <- kCV.MKL(ARRAY=trMatrix, COEFF=coeff, KERNH=H, kernels=kernel, method="svr", COST = C,EPS = E,
                      Y=try, k=k,  R=k)
       coeff <- bh$coeff ##indexs

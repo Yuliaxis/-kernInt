@@ -60,4 +60,6 @@ outliers(data=soil$abund,kernel="clin",nu=0.2)
 outliers(data=soil$abund ,y=soil$metadata[ ,"env_feature"],kernel="clin")
 ## One-class SVM with 10-Cross-Validation:
 outliers(data=soil$abund ,y=soil$metadata[ ,"env_feature"],kernel="clin",nu=c(0.45,0.5),k=10)
+## With data of multiple sources
+outliers(data=smoker$abund,kernel="crbf",H=list(nasL=0.01,nasR=0.01,oroL=0.1,oroR=0.1))
 }

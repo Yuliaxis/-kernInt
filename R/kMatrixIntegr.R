@@ -19,18 +19,12 @@
 #' @export
 
 
-KInt <- function(data,coeff="mean",...) {
+KInt <- function(data,coeff="mean") {
 
   d <- aperm(data,c(3,1,2))
 
-  if(class(coeff)!="numeric") {
-    if(coeff=="mean") {
-      return(colMeans(d))
-    } else {
-      x <- lapply(seq_len(nrow(d)), function(i) d[i,,]) ## transformar en llista
-      coeff <- umkl(X=x,method=coeff,...)
-    }
-  }
+  if(class(coeff)!="numeric") return(colMeans(d))
+
   if(dim(d)[1] != length(coeff)) stop("Length of the coefficients
                                         vector different to the number of matrices")
   if(sum(coeff) != 1) coeff <- coeff / sum(coeff)

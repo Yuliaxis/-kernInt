@@ -7,7 +7,7 @@
 regress(
   data,
   y,
-  coeff = "mean",
+  coeff,
   kernel,
   p = 0.2,
   C = 1,
@@ -65,8 +65,8 @@ regress(data=soil$abun,soil$metadata$ph,kernel="clin",p=0.6)
 regress(data=soil$abun,soil$metadata$ph,kernel="clin", C=c(0.1,1,10), E = c(0.01,0.1), k=10)
 # Regression with MKL:
 Nose <- list()
-Nose$left <- CSSnorm(smoker$abund[seq(from=1,to=nrow(smoker$abund),by=4),])
-Nose$right <- CSSnorm(smoker$abund[seq(from=2,to=nrow(smoker$abund),by=4),])
+Nose$left <- CSSnorm(smoker$abund$nasL)
+Nose$right <- CSSnorm(smoker$abund$nasR)
 age <- smoker$metadata$age[seq(from=1,to=62*4,by=4)]
 w <- matrix(c(0.5,0.1,0.9,0.5,0.9,0.1),nrow=3,ncol=2)
 regress(data=Nose,kernel="jac",y=age,C=c(1,10,100), coeff = w, k=10)

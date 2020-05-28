@@ -10,7 +10,6 @@ Encoding: UTF-8
 LazyData: true
 Depends: R(>= 3.4)
 Imports: 
-    corrplot,
     ggplot2,
     graphics,
     kernlab,
@@ -18,7 +17,6 @@ Imports:
     methods,
     philentropy,
     polynom,
-    quadprog,
     robCompositions,
     unbalanced,
     vegan

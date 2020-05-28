@@ -15,11 +15,18 @@
 In R console:  
 
 ```														
-install.packages("devtools")
+if (!requireNamespace("devtools")) install.packages("devtools")
 devtools::install_github("elies-ramon/kernInt")
 ```
 
-Once the package is installed, it can be used anytime typing::
+If metagenomeSeq was not installed previously:
+
+```
+if (!requireNamespace("BiocManager")) install.packages("BiocManager")
+BiocManager::install("metagenomeSeq")
+```
+
+Once the package is installed, it can be used anytime typing:
 
 ```
 library(kernInt)
@@ -41,8 +48,7 @@ library(kernInt)
 
 ### Example datasets
 
-We offer three metagenomic datasets with the package: a single point soil dataset, a human health dataset with an spatial component, and a novel longitudinal dataset concerning pig production. Also, to illustrate the longitudinal treatment of data, we also include the classical Berkeley Growth Dataset.
-
+We offer three metagenomic datasets with the package: a single point soil dataset, a human health dataset with an spatial component, and a novel longitudinal dataset concerning pig production. Also, to better illustrate the longitudinal treatment of data, we include the classical Berkeley Growth Dataset.
 
 [**Soil data**](https://qiita.ucsd.edu/study/description/103): Bacterial abundances in 88 soils from across North and South America. Metadata as soil pH, annual season precipitation and temperature, country, elevation, etc. is available.
 
@@ -55,4 +61,17 @@ We offer three metagenomic datasets with the package: a single point soil datase
 
 ### Vignette
 
-An in-depth vignette covering the kernel framework, with step-to-step usage and detailed examples can be found [here.](https://elies-ramon.github.io/)
+An online in-depth vignette covering the kernel framework, with step-to-step usage and detailed examples can be found [here.](https://elies-ramon.github.io/)
+
+The same vignette can be also accessed offline when the package is loaded, typing:
+
+``` 
+browseVignettes("kernInt")
+```
+
+If no vignette is found, try again after doing this:
+
+``` 
+devtools::install_github("elies-ramon/kernInt", build_vignettes = TRUE)
+``` 
+

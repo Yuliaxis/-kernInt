@@ -7,8 +7,10 @@
 \format{
 A list containing:
  \describe{
-  \item{abund}{Bacterial abundances}
+  \item{abund}{Bacterial abundances separated by origin of the sample: nasR and nasL
+  - right and left nasopharyx, oroR and oroL - right and left oropharynx}
   \item{metadata}{Sample information}
+  \item{taxonomy}{Taxonomy for each of the codes in $abund}
 }
 }
 \source{

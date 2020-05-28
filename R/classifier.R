@@ -43,12 +43,12 @@
 #' classify(data=soil$abund ,y=soil$metadata[ ,"env_feature"],kernel="clin")
 #' # Cassification with MKL:
 #' Nose <- list()
-#' Nose$left <- CSSnorm(smoker$abund[seq(from=1,to=nrow(smoker$abund),by=4),])
-#' Nose$right <- CSSnorm(smoker$abund[seq(from=2,to=nrow(smoker$abund),by=4),])
+#' Nose$left <- CSSnorm(smoker$abund$nasL)
+#' Nose$right <- CSSnorm(smoker$abund$nasR)
 #' smoking <- smoker$metadata$smoker[seq(from=1,to=62*4,by=4)]
 #' w <- matrix(c(0.5,0.1,0.9,0.5,0.9,0.1),nrow=3,ncol=2)
 #' classify(data=Nose,kernel="jac",y=smoking,C=c(1,10,100), coeff = w, k=10)
-#' # Cassification with longitudinal data:
+#' # Classification with longitudinal data:
 #' growth2 <- growth[,2:3]
 #' colnames(growth2) <-  c( "time", "height")
 #' growth_coeff <- lsq(data=growth2,degree=2)
@@ -88,6 +88,7 @@ classify <- function(data, y,  coeff="mean", kernel,  prob=FALSE, classimb, p=0.
     Jmatrix<- seqEval(DATA=data,domain=domain, kernels=kernel,h=NULL) ## Sense especificar hiperparàmetre.
     trMatrix <- Jmatrix[learn.indexes,learn.indexes,]
     teMatrix <- Jmatrix[test.indexes,learn.indexes,]
+    if(!hasArg(coeff)) coeff <- rep(1/m,m)
   } else {
     Jmatrix <- kernelSelect(kernel=kernel,domain=domain,data=data,h=NULL)
     trMatrix <- Jmatrix[learn.indexes,learn.indexes]
@@ -117,15 +118,6 @@ classify <- function(data, y,  coeff="mean", kernel,  prob=FALSE, classimb, p=0.
   if(hasArg(k)) {
     if(k<2) stop("k should be equal to or higher than 2")
     if(m>1)  {
-      if(class(coeff) == "character") {
-        if(coeff == "mean") {
-          coeff <- rep(1/m,m)
-        } else {
-          d <- aperm(trMatrix,c(3,1,2))
-          x <- lapply(seq_len(nrow(d)), function(i) d[i,,]) ## transformar en llista
-          coeff <- umkl(X=x,method=coeff)
-        }
-      }
       bh <- kCV.MKL(ARRAY=trMatrix, COEFF=coeff, KERNH=H, kernels=kernel, method="svc", COST = C,
                      Y=try, k=k,  prob=prob, R=k,classimb=wei)
       coeff <- bh$coeff ##indexs

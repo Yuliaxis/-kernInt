@@ -32,7 +32,9 @@
 #' outliers(data=soil$abund ,y=soil$metadata[ ,"env_feature"],kernel="clin")
 #' ## One-class SVM with 10-Cross-Validation:
 #' outliers(data=soil$abund ,y=soil$metadata[ ,"env_feature"],kernel="clin",nu=c(0.45,0.5),k=10)
-#' @importFrom kernlab ksvm predict
+#' ## With data of multiple sources
+#'outliers(data=smoker$abund,kernel="crbf",H=list(nasL=0.01,nasR=0.01,oroL=0.1,oroR=0.1))
+#' @importFrom kernlab as.kernelMatrix ksvm predict
 #' @importFrom methods hasArg
 #' @export
 
@@ -48,7 +50,8 @@ outliers <- function(data,y=NULL, kernel, coeff, nu=0.2,p=0.2,k,domain=NULL,H=NU
 
   # 2. Compute kernel matrix
 
-  Jmatrix<- seqEval(DATA=data,domain=domain, kernels=kernel,h=NULL) ## Sense especificar hiperparàmetre.
+   Jmatrix<- seqEval(DATA=data,domain=domain, kernels=kernel,h=NULL) ## Sense especificar hiperparàmetre.
+   if(!hasArg(coeff)) coeff <- rep(1/m,m)
 
   if(hasArg(y)){
     if(length(y) != check$n) stop("Length of the target variable do not match with the row number of predictors")
@@ -61,13 +64,10 @@ outliers <- function(data,y=NULL, kernel, coeff, nu=0.2,p=0.2,k,domain=NULL,H=NU
     try <- y[learn.indexes]
     tey <- y[test.indexes]
 
-
     if(m>1) {
-      Jmatrix<- seqEval(DATA=data,domain=domain, kernels=kernel,h=NULL) ## Sense especificar hiperparàmetre.
       trMatrix <- Jmatrix[learn.indexes,learn.indexes,]
       teMatrix <- Jmatrix[test.indexes,learn.indexes,]
     } else {
-      Jmatrix <- kernelSelect(kernel=kernel,domain=domain,data=data,h=NULL)
       trMatrix <- Jmatrix[learn.indexes,learn.indexes]
       teMatrix <- Jmatrix[test.indexes,learn.indexes]
     }
@@ -75,15 +75,6 @@ outliers <- function(data,y=NULL, kernel, coeff, nu=0.2,p=0.2,k,domain=NULL,H=NU
     if(hasArg(k)) {
       if(k<2) stop("k should be equal to or higher than 2")
       if(m>1)  {
-        if(class(coeff) == "character") {
-          if(coeff == "mean") {
-            coeff <- rep(1/m,m)
-          } else {
-            d <- aperm(trMatrix,c(3,1,2))
-            x <- lapply(seq_len(nrow(d)), function(i) d[i,,]) ## transformar en llista
-            coeff <- umkl(X=x,method=coeff)
-          }
-        }
         bh <- kCV.MKL(ARRAY=trMatrix, COEFF=coeff, KERNH=H, kernels=kernel, method="one-svc", NU = nu,
                       Y=try, k=k, R=k)
         coeff <- bh$coeff ##indexs
@@ -114,7 +105,6 @@ outliers <- function(data,y=NULL, kernel, coeff, nu=0.2,p=0.2,k,domain=NULL,H=NU
       }
     }
 
-
     if(m>1) {
       for(j in 1:m) trMatrix[,,j] <- hyperkSelection(K=trMatrix[,,j], h=H[j],  kernel=kernel[j])
       for(j in 1:m) teMatrix[,,j] <- hyperkSelection(K=teMatrix[,,j], h=H[j],  kernel=kernel[j])
@@ -136,6 +126,12 @@ outliers <- function(data,y=NULL, kernel, coeff, nu=0.2,p=0.2,k,domain=NULL,H=NU
     test <- data.frame(true=tey,predicted=pred)
     return(list("conf.matrix"=ct,"hyperparam"=bh,"prediction"=test))
   } else {
+    if(m>1) {
+      H <- unlist(H)
+      for(j in 1:m)Jmatrix[,,j] <- hyperkSelection(K=Jmatrix[,,j], h=H[j],  kernel=kernel[j])
+      Jmatrix <- KInt(data=Jmatrix,coeff=coeff)
+    }
+    Jmatrix <- as.kernelMatrix(Jmatrix)
     model <- ksvm(Jmatrix,nu=nu, type="one-svc", kernel="matrix")
     get_index <- kernlab::predict(model)
     return(which(get_index[,1]))

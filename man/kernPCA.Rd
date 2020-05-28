@@ -61,8 +61,8 @@ kernPCA(soil$abund,kernel="clin", y=soil$metadata$phd, colors=c("orange","orchid
 title = "Soil kernel PCA",legend = TRUE)
 ## Heterogeneous data fusion case
 Airway <- list()
-Airway$nosel <- CSSnorm(smoker$abund[seq(from=1,to=nrow(smoker$abund),by=4),])
-Airway$throatl <- CSSnorm(smoker$abund[seq(from=3,to=nrow(smoker$abund),by=4),])
+Airway$nosel <- CSSnorm(smoker$abund$oroL)
+Airway$throatl <- CSSnorm(smoker$abund$oroR)
 smoking <- smoker$metadata$smoker[seq(from=1,to=62*4,by=4)]
 kernPCA(data=Airway,kernel=rep("jac",2),title="Airway samples",y=smoking)#' @import ggplot2
 }

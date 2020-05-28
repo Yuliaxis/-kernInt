@@ -59,8 +59,5 @@ Hierarchical clustering
 ## Simple case
 hklust(soil$abund,kernel="clin", title = "Soil data cluster dendogram",labels=TRUE)
 ## Spatial data fusion case
-Nose <- list()
-Nose$left <- CSSnorm(smoker$abund[seq(from=1,to=nrow(smoker$abund),by=4),])
-Nose$right <- CSSnorm(smoker$abund[seq(from=2,to=nrow(smoker$abund),by=4),])
-hklust(data=Nose,kernel=rep("jac",2),title="Nose samples",cut=2,colors=c("black","red"))
+hklust(data=smoker$abund,kernel=rep("clin",4),title="Nose samples",cut=2,colors=c("black","red"))
 }
