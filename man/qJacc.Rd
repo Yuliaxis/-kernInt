@@ -7,13 +7,13 @@
 qJacc(data)
 }
 \arguments{
-\item{data}{A matrix or data.frame containing nonnegative values.}
+\item{data}{A matrix or data.frame containing nondnegative values.}
 }
 \value{
 The quantitative Jaccard kernel matrix
 }
 \description{
-This function returns the quantitative Jaccard kernel matrix, also known as Ruzicka similarity.
+This function returns the quantitative Jaccard or min-max kernel, also known as Ruzicka similarity.
 }
 \examples{
 example <- matrix(abs(rnorm(12)),nrow=4,ncol=3)

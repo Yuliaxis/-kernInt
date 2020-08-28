@@ -1,24 +1,24 @@
 ## DATA NORMALIZATION
 
-
 #' Cumulative Sum Scaling Normalization
 #' @param data Input data
-#' @return Normalized data
+#' @param pcount Pseudocount value (default value 0)
+#' @return CSS normalized data
 #' @examples
 #' soilData <- CSSnorm(data=soil$abund)
-#' @import metagenomeSeq
+#' @importFrom metagenomeSeq newMRexperiment cumNormStat cumNorm MRcounts
 #' @export
 
 
-CSSnorm <- function(data) {
-  data <- t(data)
-  data.metagenomeSeq <-  newMRexperiment(data, #phenoData<- phenotypeData,
+CSSnorm <- function(data,pcount=0) {
+  data <- t(data+pcount)
+  metSeqData <-  newMRexperiment(data, #phenoData<- phenotypeData,
                                        featureData=NULL, libSize=NULL, normFactors=NULL) #using filtered data
-  p <-  cumNormStat(data.metagenomeSeq) #default is 0.5
-  data.cumnorm <-  cumNorm(data.metagenomeSeq, p=p)
-  #data.cumnorm
-  data.CSS <-  t(MRcounts(data.cumnorm, norm=TRUE, log=TRUE))
-  return(data.CSS)
+  p <-  cumNormStat(metSeqData) #default is 0.5
+  cumNormData <-  cumNorm(metSeqData, p=p)
+  #cumNormData
+  cssData <-  t(MRcounts(cumNormData, norm=TRUE, log=TRUE))
+  return(cssData)
 }
 
 
@@ -26,15 +26,14 @@ CSSnorm <- function(data) {
 #'
 #' @param data A matrix or data.frame with compositional data (raw counts)
 #' @return clr transformation of data
+#' @param pcount Pseudocount value (default value 0.1)
 #' @examples
 #' clr(data=soil$abund)
 #' @importFrom robCompositions cenLR
 #' @export
 #'
 
-clr <- function(data) {
-  minv <- min(  data[data!=0] )
-  minv <- minv/10
-  return(cenLR(data+minv)$x.clr)
+clr <- function(data,pcount=0.1) {
+  return(cenLR(data+pcount)$x.clr)
 }
 

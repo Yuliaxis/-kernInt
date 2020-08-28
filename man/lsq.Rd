@@ -24,7 +24,7 @@ An object of class lsq containing the intercept and coefficients over time of fo
 Least Squares Coefficients
 }
 \examples{
-growth2 <- growth[,2:3]
+growth2 <- growth
 colnames(growth2) <-  c( "time", "height")
 lsq(data=growth2,degree=2)
 }

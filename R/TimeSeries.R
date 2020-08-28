@@ -25,7 +25,7 @@ timeserieshelp <- function(data) {
 #' @param scale If true, divide each coefficient by its variance
 #' @return An object of class lsq containing the intercept and coefficients over time of for each variable and individual.
 #' @examples
-#' growth2 <- growth[,2:3]
+#' growth2 <- growth
 #' colnames(growth2) <-  c( "time", "height")
 #' lsq(data=growth2,degree=2)
 #' @importFrom stats as.formula coefficients lm var

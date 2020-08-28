@@ -49,11 +49,13 @@
 #' w <- matrix(c(0.5,0.1,0.9,0.5,0.9,0.1),nrow=3,ncol=2)
 #' classify(data=Nose,kernel="jac",y=smoking,C=c(1,10,100), coeff = w, k=10)
 #' # Classification with longitudinal data:
-#' growth2 <- growth[,2:3]
+#' growth2 <- growth
 #' colnames(growth2) <-  c( "time", "height")
 #' growth_coeff <- lsq(data=growth2,degree=2)
-#' sex <- growth[seq(from=1,to=nrow(growth),by=8),1]
-#' classify(data=growth_coeff,kernel="frbf",H=0.0001, y=sex, domain=c(11,18))
+#' target <- rep("Girl",93)
+#' target[ grep("boy",rownames(growth_coeff$coef))] <- "Boy"
+#' target <- as.factor(target)
+#' classify(data=growth_coeff,kernel="frbf",H=0.0001, y=target, domain=c(11,18))
 #' @importFrom kernlab alpha alphaindex as.kernelMatrix kernelMatrix predict rbfdot SVindex
 #' @importFrom unbalanced ubBalance
 #' @importFrom methods hasArg

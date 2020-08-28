@@ -20,8 +20,8 @@ The L2 norm (euclidean distance) between to matrices
 RBF kernel for functions
 }
 \examples{
-growth2 <- growth[,2:3]
+growth2 <- growth
 colnames(growth2) <-  c( "time", "height")
 fitted <- lsq(data=growth2,degree=2)
-RBFun(fitted,domain=c(11,18),h=0.00001)
+RBFun(fitted,domain=c(1,18),h=0.00001)
 }

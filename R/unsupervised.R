@@ -74,7 +74,8 @@ hklust <- function(data, comb="mean", kernel, H=NULL, domain=NULL, method="ward.
 #' Airway$nosel <- CSSnorm(smoker$abund$oroL)
 #' Airway$throatl <- CSSnorm(smoker$abund$oroR)
 #' smoking <- smoker$metadata$smoker[seq(from=1,to=62*4,by=4)]
-#' kernPCA(data=Airway,kernel=rep("jac",2),title="Airway samples",y=smoking)#' @import ggplot2
+#' kernPCA(data=Airway,kernel=rep("jac",2),title="Airway samples",y=smoking)#'
+#' @import ggplot2
 #' @importFrom  graphics plot
 #' @export
 
@@ -85,6 +86,7 @@ kernPCA <- function(data, comb="mean",kernel, plot=TRUE,H=NULL,domain=NULL, y, d
   }  else  {
     matrix <- kernelSelect(data=data, kernel=kernel, h=H)
   }
+  if(sum(grepl("rbf",kernel)>0) && is.null(H)) stop("H is mandatory")
   matrix <- kernlab::as.kernelMatrix(matrix)
   i <- dim[1]; j <- dim[2]
   subjects.kpca <- kernlab::kpca(matrix,  kernel = matrix)

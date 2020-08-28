@@ -64,5 +64,5 @@ Airway <- list()
 Airway$nosel <- CSSnorm(smoker$abund$oroL)
 Airway$throatl <- CSSnorm(smoker$abund$oroR)
 smoking <- smoker$metadata$smoker[seq(from=1,to=62*4,by=4)]
-kernPCA(data=Airway,kernel=rep("jac",2),title="Airway samples",y=smoking)#' @import ggplot2
+kernPCA(data=Airway,kernel=rep("jac",2),title="Airway samples",y=smoking)#'
 }

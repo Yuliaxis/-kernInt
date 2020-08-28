@@ -4,10 +4,12 @@
 \alias{clr}
 \title{clr transform}
 \usage{
-clr(data)
+clr(data, pcount = 0.1)
 }
 \arguments{
 \item{data}{A matrix or data.frame with compositional data (raw counts)}
+
+\item{pcount}{Pseudocount value (default value 0.1)}
 }
 \value{
 clr transformation of data

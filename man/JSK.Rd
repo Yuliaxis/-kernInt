@@ -7,7 +7,7 @@
 JSK(data)
 }
 \arguments{
-\item{data}{A matrix or data.frame containing nonnegative values.}
+\item{data}{A matrix or data.frame containing positive values.}
 }
 \value{
 The JS kernel matrix

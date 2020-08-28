@@ -54,11 +54,30 @@ RBF <- function(data,h=NULL) {
 
 ####### Microbiome  beta diversities #########
 
+
+# Bray Curtis
+#
+# This function returns the Bray Curtis or Sorensen-Dice kernel
+#
+# @param data A matrix or data.frame containing nonnegative values.
+# @return The Bray Curtis kernel matrix
+# @examples
+# example <- matrix(abs(rnorm(12)),nrow=4,ncol=3)
+# kmatrix <- BCK(data=example)
+# @importFrom vegan vegdist
+# @export
+#
+# BCK <- function(data) {
+#   bc <- vegdist(data,method="bray",diag=TRUE,upper=TRUE)
+#   bc <- as.matrix(bc)
+#   return(1-bc)
+# }
+
 #' Quantitative Jaccard
 #'
-#' This function returns the quantitative Jaccard kernel matrix, also known as Ruzicka similarity.
+#' This function returns the quantitative Jaccard or min-max kernel, also known as Ruzicka similarity.
 #'
-#' @param data A matrix or data.frame containing nonnegative values.
+#' @param data A matrix or data.frame containing nondnegative values.
 #' @return The quantitative Jaccard kernel matrix
 #' @examples
 #' example <- matrix(abs(rnorm(12)),nrow=4,ncol=3)
@@ -73,11 +92,12 @@ qJacc <- function(data) {
   return(1-ruzicka)
 }
 
+
 # Jensen-Shannon kernel
 #'
 #' This function returns the Jensen Shannon Kernel
 #'
-#' @param data A matrix or data.frame containing nonnegative values.
+#' @param data A matrix or data.frame containing positive values.
 #' @return The JS kernel matrix
 #' @examples
 #' example <- matrix(abs(rnorm(12)),nrow=4,ncol=3)
@@ -135,10 +155,10 @@ clrRBF <- function(data,h=NULL) {
 #' @param cos.norm If TRUE, perform cosine normalization
 #' @return A kernel matrix
 #' @examples
-#' growth2 <- growth[,2:3]
+#' growth2 <- growth
 #' colnames(growth2) <-  c( "time", "height")
 #' fitted <- lsq(data=growth2,degree=2)
-#' Kfun(fitted,domain=c(11,18))
+#' Kfun(fitted,domain=c(1,18))
 #' @importFrom polynom integral polynomial
 #' @export
 
@@ -202,10 +222,10 @@ Kfun <- function(data,domain,cos.norm=FALSE) {
 #' @param h Gamma hyerparameter. If NULL, the L2 norms are returned
 #' @return The L2 norm (euclidean distance) between to matrices
 #' @examples
-#' growth2 <- growth[,2:3]
+#' growth2 <- growth
 #' colnames(growth2) <-  c( "time", "height")
 #' fitted <- lsq(data=growth2,degree=2)
-#' RBFun(fitted,domain=c(11,18),h=0.00001)
+#' RBFun(fitted,domain=c(1,18),h=0.00001)
 #' @importFrom polynom integral polynomial
 #' @export
 
@@ -255,8 +275,8 @@ RBFun <- function(data,h=NULL,domain) {
   K <- matrix(0,ncol=nrow(data),nrow=nrow(data))
   for(i in 1:nrow(ids)) K[ids[i,1],ids[i,2]] <- K[ids[i,2],ids[i,1]] <- Comp[i]
   rownames(K) <- colnames(K) <- rownames(data)
-  if(is.null(h) || h == 0 ) return(-K)
-  return(exp(h*K))
+  if(is.null(h) || h == 0 ) return(K)
+  return(exp(-h*K))
 }
 
 
@@ -267,6 +287,9 @@ kernelSelect <- function(kernel,data,domain=NULL,h=NULL) { #h és un hiperparàm
   if(kernel == "jac") {
     cat("quantitative Jaccard (Ruzicka) kernel\n")
     return(qJacc(data=data))
+  # }else  if(kernel == "bck") {
+    # cat("Bray Curtis kernel\n")
+    # return(BCK(data=data))
   } else if(kernel == "jsk") {
     cat("Jensen Shannon kernel \n")
     return(JSK(data=data))

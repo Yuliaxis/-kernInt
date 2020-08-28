@@ -5,10 +5,9 @@
 \alias{growth}
 \title{Growth data}
 \format{
-A matrix with 744 rows (93 individuals * 8 measures) and 3 variables:
+A matrix with 2883 rows (93 individuals * 31 measures) and 2 variables:
  \describe{
-  \item{Sex}{Boy or girl}
-  \item{Age}{Ranging from 11 to 18}
+  \item{Age}{Age in years}
   \item{Height}{Height in cm}
 }
 }
@@ -24,6 +23,6 @@ Tuddenham, R. D., and Snyder, M. M. (1954) "Physical growth of California boys a
 growth
 }
 \description{
-Longitudinal height data of 54 girls and 39 boys (93 individuals in total) from age 11 to 18.
+Longitudinal height data of 54 girls and 39 boys (93 individuals in total) from age 1 to 18.
 }
 \keyword{datasets}

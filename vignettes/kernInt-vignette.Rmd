@@ -3,16 +3,15 @@ title: '**''kernInt'' vignette**'
 author: "Elies Ramon"
 date: "`r Sys.Date()`"
 output:
+  word_document:
+    toc: yes
+  pdf_document:
+    toc: yes
   html_document:
     theme: cosmo
     toc: yes
     toc_float: yes
-  pdf_document:
-    toc: yes
-vignette: |
-  %\VignetteIndexEntry{kernInt-vignette} 
-  %\VignetteEncoding{UTF-8} 
-  %\VignetteEngine{knitr::rmarkdown}
+vignette: "%\\VignetteIndexEntry{kernInt-vignette} \n%\\VignetteEncoding{UTF-8} \n%\\VignetteEngine{knitr::rmarkdown}\n"
 ---
         
 
@@ -69,9 +68,9 @@ library(kernInt)
 ### Available kernels
 
 - Widely used kernels for real vectors: the linear (`lin`) and RBF (`rbf`) kernels.
-- Kernels for compositional data: the compositional linear `clin` and Aitchison-RBF `crbf` kernels.
-- Kernels derived from ecological distances: the Jaccard `jac` and Jensen-Shanon `jsk` kernels.
-- Kernels specific for functional data: the functional linear `flin` and functional RBF `frbf` kernels.
+- Kernels for compositional data: the compositional linear `clin` and Aitchison-RBF `crbf` kernels. Both kernels can be implemented directly from the raw counts from tables.
+- Kernels derived from ecological distances: the Jaccard `jac` and Jensen-Shanon `jsk` kernels. Metagenomic data should be normalized before applying these kernels, for example by using CSS (cumulative sum scaling).
+- Kernels specific for functional data: the functional linear `flin` and functional RBF `frbf` kernels. They need functions (for instance, representing time series) as an input.
 
 ### Example data
 
@@ -81,14 +80,14 @@ We offer three metagenomic datasets with the package: a single point soil datase
 
 [**Smokers**](https://qiita.ucsd.edu/study/description/524): Microorganism abundances of oro and nasopharynx in 29 smokers and 33 nonsmokers. The dataset can be accessed typing `smoker`.
 
-**Pig data**:  Previously unpublished longitudinal gut microbiome dataset of 153 piglets during their first week of life. The dataset can be accessed typing `pig`.
+**Pig data**: Previously unpublished longitudinal gut microbiome dataset of 153 piglets during their first week of life. The dataset can be accessed typing `pig`.
 
 [**Growth**](https://europepmc.org/article/med/13217130): Berkeley longitudinal height data of 54 girls and 39 boys (93 individuals in total) from ages 11 to 18. The dataset can be accessed typing `growth`.
 
  
 ## Usage - Standard case
 
-We refer as "the standard case" data consisting in a sample of individuals (for example: human, animals, soil sites...) with no repeated measures. The input of the 'kernInt' functions, thus, has class `data.frame` or `matrix`. We will use as example for this case the `soil` data.
+We refer data consisting in a sample of individuals (for example: human, animals, soil sites...) with no repeated measures as "the standard case".  The format of the input table must be with sample names as rows and taxon/OTUs as columns. The input of the 'kernInt' functions, thus, has class `data.frame` or `matrix`. We will use as example for this case the `soil` data. 
 
 ### kernel PCA
 
@@ -114,13 +113,14 @@ The projected data can be retrieved setting `plot=FALSE`.
 A dendogram plot presenting a hierarchical clustering of data can be obtained with:
 
 ```{r,  fig.width = 7}
-hklust(data=soil$abund,kernel="jac")
+soilData <- CSSnorm(data=soil$abund)  ### CSS normalization
+hklust(data=soilData,kernel="jac",labels=1:nrow(soilData))
 ```
 
 Additional arguments allow changing the agglomeration method, outlining clusters or customizing the plot:
 
 ```{r,  fig.width = 7}
-hklust(data=soil$abund,kernel="jac", title = "Soil data cluster dendogram",cut=3,colors=c("coral3","orchid3","darkolivegreen3"))
+hklust(data=soilData,kernel="jac", title = "Soil data cluster dendogram",cut=3,colors=c("coral3","orchid3","darkolivegreen3"))
 ```
 
 The dendogram object can be retrieved setting `plot=FALSE`.
@@ -134,27 +134,27 @@ The most basic call only needs three arguments: `data` (predictor variables; e.g
 
 For example, if we want to predict the pH of soil (`y`) from the abundances (`data`) using the compositional linear kernel:
 
-```
-regress(data=soil$abund, kernel="clin", y=soil$metadata$ph)
+```{r}
+modelreg <- regress(data=soil$abund, kernel="clin", y=soil$metadata$ph)
 ```
 
 If the user has a pre-computed kernel matrix at hand, it can be passed as input to `data`. `kernel` should then be turned to `kernel="matrix"`.
 
 The SVM hyperparameters Cost (`C`) and Epsilon (`E`) can be specified, thus tuning how the model will adjust to the data. Roughly speaking, `C` is the cost of doing errors. In SVM regression models, differences between predicted and actual values smaller than `E` are not considered errors. Both increasing `C` and decreasing `E` increases the complexity of the model and the danger of overfitting.
 
-```
+```{r,eval=FALSE}
 regress(data=soil$abund, kernel="clin", y=soil$metadata$ph, C=5, E=0.001)
 ```
 
 In addition, a generic kernel hyperparameter (`H`) can be specified. For example, if the chosen kernel is RBF, `H` will be interpreted as *gamma*: RBF(x,y) = exp(-gamma·||x-y||^2)
 
-```
+```{r,eval=FALSE}
 regress(data=soil$abund, y=soil$metadata$ph, kernel="crbf", C=5, H=0.1)
 ```
 
-k-Cross Validation can be performed to obtain the optimal hyperparameters. This is done providing an argument to `k`:
+k-Cross Validation can be performed to obtain the optimal hyperparameters. This is done providing an argument to `k`. Then, the best hyperparameter value (or the best combination of hyperparameter values) will be selected among the values provided by the user:
 
-```
+```{r,eval=FALSE}
 regress(data=soil$abund, y=soil$metadata$ph, kernel="clin", C=c(1,5,10), E=c(0.001,0.1), k=5)
 ```
 
@@ -168,11 +168,11 @@ A list containing:
 
 - `$nmse`: Normalized mean squared error over the test data. This permits evaluating how good the model is at predicting.
 
-- `$hyperparam`: Hyperparameter values used to build the model and cross-validation errors, if applicable.
+- `$hyperparam`: Hyperparameters' values used to build the model and their cross-validation error (if applicable).
 
 - `$prediction`: Predicted and true values (test set). Rownames correspond to the indexes in the original data.
 
-- `$var.imp`: The variable importance (e.g. microbial signature) if a linear or linear-like kernel is used.
+- `$var.imp`: The variable importance (e.g. microbial signature) if a linear or linear-like kernel is used. To present relative values of
 
 
 ### SVM classification
@@ -181,13 +181,13 @@ SVM classification is performed via the `classify()` function. Both binary or mu
 
 The usage of `classify()` is for the most part identical to that of `regress()`. For example, to predict if a certain soil came from forest, tropical, shrubland or grassland environment:
 
-```
-classify(data=soil$abund ,y=soil$metadata[ ,"env_feature"],kernel="clin")
+```{r}
+modelclas <- classify(data=soil$abund ,y=soil$metadata[ ,"env_feature"],kernel="clin")
 ```
 
 Probabilistic classification is available setting `prob=TRUE`:
 
-```
+```{r,eval=FALSE}
 classify(data=soil$abund ,y=soil$metadata[ ,"env_feature"],kernel="clin",prob=TRUE)
 ```
 
@@ -195,17 +195,18 @@ The available hyperparameters are `H` and `C` (where C is the cost of missclassi
 
 -Class weighting: 
 
-```
+```{r,eval=FALSE}
 classify(data=soil$abund ,y=soil$metadata[ ,"env_feature"],kernel="clin", classimb="weights",C=c(0.001,0.01),k=10)`
 ```
 -Undersampling:
 
-```
+```{r,eval=FALSE}
 classify(data=soil$abund ,y=soil$metadata[ ,"env_feature"],kernel="clin", classimb="ubUnder",C=c(0.001,0.01),k=5)
 ```
 
--Oversampling: 
-```
+-Oversampling:
+
+```{r,eval=FALSE}
 classify(data=soil$abund ,y=soil$metadata[ ,"env_feature"],kernel="clin", classimb="ubOver",C=c(0.001,0.01),k=5)
 ```
 
@@ -215,11 +216,32 @@ A list containing:
 
 - `$conf.matrix`: Confusion matrix (true versus predicted) for the test data. This permits evaluating how good the model is at predicting.
 
-- `$hyperparam`: Hyperparameter values used to build the model and cross-validation errors, if applicable.
+- `$hyperparam`: Hyperparameters' values used to build the model and their cross-validation error (if applicable).
 
 - `$prediction`: Predicted and true values (test set). Rownames correspond to the indexes in the original data. If `prob=TRUE`, the probability of each observation to belong to a given class.
 
 - `$var.imp`: The variable importance (e.g. microbial signature) if a linear or linear-like kernel is used.
+
+### Variable importances
+
+Following [Guyon2002](https://link.springer.com/article/10.1023/A:1012487302797), we can obtain the importance of a variable in a SVM model as: 
+
+```{r}
+imp <- modelreg$var.imp^2
+```
+
+Then, to generate a plot of the 10 most important features:
+            
+```{r}
+imp <- imp/sum(imp) ## To give relative importances
+imp10 <- sort(imp,decreasing = TRUE)[1:10]
+par(mar=c(4,5,4,2))
+barplot(sort(imp10),horiz = TRUE,las=2,
+main="Soil data top ten important taxa",xlab = "Relative Importance")
+## To know the taxonomic classification of the ten most important OTUs, do:
+soil$taxonomy[names(imp10),]
+```
+
 
 ### Outlier detection
 
@@ -227,19 +249,19 @@ The `outliers()` function can be used either in a supervised or in an unsupervis
 
 In the latter approach, the most basic call to this function needs two arguments: `data` (predictor variables) and `kernel` (the kernel function used). Then, the function will return the data outliers:
 
-```
+```{r,eval=FALSE}
 outliers(data=soil$abund ,kernel="clin")
 ```
 
 The nu hyperparameter (`nu`) and a gamma hyperparameter `H` can be entered:
 
-```
+```{r,eval=FALSE}
 outliers(data=soil$abund,kernel="crbf",nu=0.2,H=0.05)
 ```
 
 If an argument for `y` is provided, `outliers()` functions as an one-class SVM. In that case, cross-validation will be performed if `k` has an argument. Also, `p` stands for the proportion (or indexes, or rownames) of data instances reserved for the test set.
 
-```
+```{r,eval=FALSE}
 outliers(data=soil$abund,y=soil$metadata[ ,"env_feature"],kernel="clin",nu=c(0.1,0.2),k=5)
 ```
 
@@ -252,7 +274,7 @@ The availability of multiple types of data for the same sample of individuals is
 MKL is available to `classify()`, `regress()` and `outliers()`. All features of these two functions are available when performing MKL. 
 To do MKL, the `data` argument must be a list of length > 1. Each element of the list should be a data.frame or matrix, and rows should coincide. If `kernel="matrix"` data may be a three-dimensional array. `kernel` argument may contain only one kernel name (thus implying that the kernel is the same for all datasets) or a vector of kernel names. That way a different kernel will be applied to each data type. For example, if we have a list of metagenomic abundances, as in `smoker$abund`:
 
-```
+```{r,eval=FALSE}
 css_data <- lapply(smoker$abund,CSSnorm) ## CSS normalization
 smoking <-  smoker$metadata$smoker[seq(from=1,to=62*4,by=4)] ## Target variable
 classify(data=css_data, y=smoking, kernel="jac")
@@ -265,20 +287,20 @@ classify(data=jacc_kern, y=smoking, kernel="matrix")
 
 The `coeff` argument is for the weight of each data type in the kernel combination. When absent, the mean across all kernel matrices is performed.
 
-```
+```{r,eval=FALSE}
 classify(data=jacc_kern, y=smoking,coeff = c(0.1,0.2,0.4,0.3) , kernel="matrix")
 ```
 
 The use of additional arguments as `C`, `E`, `p`... remains the same. Kernel(s)' generic hyperparameter in the MKL usage, `H` must be NULL or, either, a list so each element is the hyperparameter applied of each kernel function:
 
-```
+```{r,eval=FALSE}
 h <- list(nasL=0.001,nasR=0.1,oroL=0.01,oroR=0.01)
 classify(data=smoker$abund, y=smoking,coeff = c(0.1,0.2,0.4,0.3), C=10, H=h, kernel="crbf")
 ```
 
 In the case of k-Cross-Validation:
 
-```
+```{r,eval=FALSE}
 h <- list(nasL=c(0.01,0.001),nasR=c(0.01,0.001),oroL=0.0001,oroR=0.0001)
 classify(data=smoker$abund, y=smoking,coeff = c(0.1,0.2,0.4,0.3), C=c(1,10), H=h, kernel="crbf",k=5)
 ```
@@ -288,19 +310,19 @@ classify(data=smoker$abund, y=smoking,coeff = c(0.1,0.2,0.4,0.3), C=c(1,10), H=h
 
 `KInt()` and `fuseData()` return a fused kernel matrix, but the former uses kernel matrices as input while the latter needs a list with the different data sources.
 
-```
+```{r,eval=FALSE}
 KInt(jacc_kern)
 ```
 
 We can use different kernel functions for each type of data; for example, the Jaccard kernel for the first data type and the compostional linear kernel for the second:
 
-```
+```{r,eval=FALSE}
 fuseData(DATA=css_data,kernel=c("jac","clin"))
 ```
 
 The former command consider the two sources equally important. If not, we can state the weights:
 
-```
+```{r,eval=FALSE}
 fuseData(DATA=css_data,kernel=c("jac","lin"),coeff=c(0.9,0.1))
 ```
 
@@ -310,29 +332,56 @@ In this case, we have repeated samples for the same individuals indexed by time.
 
 ```{r}
 library(ggplot2)
-growplot <- data.frame(growth)
-growplot$sex[growplot$sex==1] <- "girl"
-growplot$sex[growplot$sex==2] <- "boy"
-growplot$sex <- factor(growplot$sex)
-ggplot(growplot, aes(x = age, y = height, group=rownames(growth),color = sex)) + 
+target <- rep("Girl",nrow(growth))
+target[ grep("boy",rownames(growth))] <- "Boy"
+target <- as.factor(target)
+growplot <- data.frame(rownames(growth),growth,target=target)
+ggplot(growplot, aes(x = age, y = height, group=rownames.growth.,color = target)) + 
   geom_line()+ ggtitle("Growth spurt") + theme_bw()+ theme(legend.title = element_blank())
 ```
 
 This kind of data is called longitudinal and is typically represented as functions. The coefficients of a simple polynomial fitting can be obtained with `lsq()` by least squares. For the `growth` dataset, we interpolate the growth curves with a polynomial of degree 2:
 
-```
-growth2 <- growth[,2:3]
+```{r}
+growth2 <- growth
 colnames(growth2) <-  c("time", "height")
 growth_coeff <- lsq(data=growth2,degree=2)
 ```
 
 The kernel framework allows direct handling of complex data types as functions using specific kernels. 'kernInt' implements the functional linear (`kernel=flin`) and functional RBF (`kernel=frbf`) kernel. When used, a `domain` argument to evaluate the functions (e.g. a time interval) has to be provided. For instance, we use `classify` to predict from the growth curve if the individual was a girl or a boy:
 
-```
-target <- growth[seq(from=1,to=nrow(growth),by=8),1]
-classify(data=growth_coeff,kernel="frbf",H=0.0001, y=target, domain=c(11,18))
+```{r}
+target <- rep("Girl",93)
+target[ grep("boy",rownames(growth_coeff$coef))] <- "Boy"
+target <- as.factor(target)
+cm <- array(0,dim=c(2,2,40))
+for(i in 1:40) {
+  model <- classify(data=growth_coeff,kernel="frbf",C=c(1,5,10,50), H=0.0001,domain=c(1,18), y=target,k=5)
+  cm[,,i] <- model$conf.matrix
+}
 ```
 
+We may compare this approach to perform a nonlongitudinal prediction using only the last time point (age 18):
+
+```{r}
+cm2 <- array(0,dim=c(2,2,40))
+for(i in 1:40) {
+  model <- classify(data=matrix(growth[which(growth[,1]==18),2]),kernel="rbf",C=c(1,5,10,50), H=0.001, y=target,k=5)
+  cm2[,,i] <- model$conf.matrix
+}
+
+ acc <- matrix(0,nrow=40,ncol=4)
+ colnames(acc) <- c("Acc.Long","Acc.18y","F1.Long","F1.18y")
+  for(i in 1:40)  {
+   acc[i,1] <- Acc(cm[,,i])
+   acc[i,2] <- Acc(cm2[,,i])
+   acc[i,3] <- F1(cm[,,i])
+   acc[i,4] <- F1(cm2[,,i])
+  }
+ boxplot(acc,main="Accuracy and F1")
+```
+
+It can be observed that taking account all time points delivers a much better prediction performance that keeping a single time point, even if it is that of maximum separation between the two groups.
 
 ## Additional help
 

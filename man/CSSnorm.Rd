@@ -4,13 +4,15 @@
 \alias{CSSnorm}
 \title{Cumulative Sum Scaling Normalization}
 \usage{
-CSSnorm(data)
+CSSnorm(data, pcount = 0)
 }
 \arguments{
 \item{data}{Input data}
+
+\item{pcount}{Pseudocount value (default value 0)}
 }
 \value{
-Normalized data
+CSS normalized data
 }
 \description{
 Cumulative Sum Scaling Normalization

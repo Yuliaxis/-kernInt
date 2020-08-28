@@ -20,8 +20,8 @@ A kernel matrix
 Functional linear kernel
 }
 \examples{
-growth2 <- growth[,2:3]
+growth2 <- growth
 colnames(growth2) <-  c( "time", "height")
 fitted <- lsq(data=growth2,degree=2)
-Kfun(fitted,domain=c(11,18))
+Kfun(fitted,domain=c(1,18))
 }
