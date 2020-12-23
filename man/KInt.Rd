@@ -27,5 +27,4 @@ DATA[,,3] <- matrix(abs(rnorm(16)),nrow=4,ncol=4)
 diag(DATA[,,3]) <- 1
 KInt(data=DATA)
 KInt(data=DATA,coeff=c(0.5,0.3,0.2))
-
 }

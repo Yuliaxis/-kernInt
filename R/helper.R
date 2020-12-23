@@ -14,20 +14,21 @@ expand.grid.mod <- function(x, rep) { # x is a vector
 
 # Check input data
 #' @keywords internal
+#' @importFrom methods is
 checkinput <- function(data, kernel) {
 
-  if(class(data) == "list") {
+  if(is(data,"list")) {
     m <- length(data)
     if(m < 2) {
       data <- unlist(data)
     } else {
-      if(unique(sapply(data,class)) != "lsq") {
+      if(!("lsq" %in% unique(as.vector(sapply(data,class))))) {
       ## Comprova tots els elements tenen el mateix nombre de files
-      n <- unique(sapply(data,nrow))
-      data <- sapply(data,function(x)return(x),simplify = "array") #simplifica a array si se pot
-      } else {
-        n <- rep(0,m)
-        for(x in 1:m) {
+        n <- unique(sapply(data,nrow))
+        data <- sapply(data,function(x)return(x),simplify = "array") #simplifica a array si se pot
+        } else {
+          n <- rep(0,m)
+          for(x in 1:m) {
           n[x] <- data[[x]]$coeff
         }
         n <- unique(n)
@@ -35,14 +36,14 @@ checkinput <- function(data, kernel) {
       if(length(n) != 1) stop("Elements of the list have different number of rows")
     }
 
-  } else if(class(data) == "array") {
+  } else if(is(data,"data.frame" )  | is( data, "matrix")) {
+    m <- 1
+    n <- nrow(data)
+  } else if(is(data,"array")) {
     n <- dim(data)[1]
     m <- dim(data)[3]
     if(m < 2) data <- matrix(data[,,1],ncol=dim(data)[2],nrow=n)
-  } else if(class(data) == "data.frame" | class(data) == "matrix") {
-    m <- 1
-    n <- nrow(data)
-  } else if(class(data) == "lsq") {
+  } else if(is(data,"lsq")) {
     m <- 1
     n <- nrow(data$coef)
   } else {
@@ -141,6 +142,8 @@ longTRTE <- function(data,plong) {
 
 # Wrapper training test
 #' @keywords internal
+#' @importFrom methods is
+
 checkp <- function(p,data) {
   if((length(p) == 1) && (p < 1)) { ### p és sa proporció de test.
     if(p<=0) stop("A test partition is mandatory")
@@ -148,7 +151,7 @@ checkp <- function(p,data) {
     learn.indexes <- index$li
     test.indexes <- index$ti
   } else {                #### els índexs de test són entrats de forma manual
-    if(class(p)=="character") {
+    if(is(p,"character")) {
       test.indexes <- which(rownames(data) %in% p)
     } else {
       test.indexes <- p
@@ -242,13 +245,14 @@ hyperkSelection <- function(K, h, kernel) {
 
 ## Importances of a given model (core)
 #' @keywords internal
-#'
+#' @importFrom methods is
+
 
 impCore <- function(kernel,alphaids,alphas,data,ys,coeff,m) {
   alphas <- unlist(alphas)
   if(all(grepl("lin", kernel))) {
     clr <- which(kernel=="clin")
-    if(class(data)=="array") { ### combined importances
+    if(is(data,"array") & !is(data,"matrix")) { ### combined importances
       if(length(clr)>0) for(i in clr) data[,,i] <- clr(data[,,i])
         coeff <- array(rep(coeff,each=length(data)/m),dim=c(dim(data)[1],dim(data)[2],dim(data)[3]))
         cosn <-  apply(data^2,3L,rowSums) ## cosine normalization
@@ -258,7 +262,7 @@ impCore <- function(kernel,alphaids,alphas,data,ys,coeff,m) {
         svmatrix <- t(apply(svmatrix, 1L, rowSums))
         svmatrix <- as.matrix(svmatrix[alphaids, ])
         importances  <- abs(colSums( matrix((ys * alphas),ncol=ncol(svmatrix),nrow=length(ys)) * svmatrix))
-      } else if(class(data)=="list" || class(data)=="lsq"){
+      } else if(is(data,"list") || is(data,"lsq")){
         importances <- NULL
       } else {
         if(length(clr)>0) data <- clr(data)

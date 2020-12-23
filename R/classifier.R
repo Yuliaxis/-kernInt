@@ -58,7 +58,7 @@
 #' classify(data=growth_coeff,kernel="frbf",H=0.0001, y=target, domain=c(11,18))
 #' @importFrom kernlab alpha alphaindex as.kernelMatrix kernelMatrix predict rbfdot SVindex
 #' @importFrom unbalanced ubBalance
-#' @importFrom methods hasArg
+#' @importFrom methods hasArg is
 #' @export
 
 

@@ -3,14 +3,14 @@ title: '**''kernInt'' vignette**'
 author: "Elies Ramon"
 date: "`r Sys.Date()`"
 output:
-  word_document:
-    toc: yes
-  pdf_document:
-    toc: yes
   html_document:
     theme: cosmo
     toc: yes
     toc_float: yes
+  word_document:
+    toc: yes
+  pdf_document:
+    toc: yes
 vignette: "%\\VignetteIndexEntry{kernInt-vignette} \n%\\VignetteEncoding{UTF-8} \n%\\VignetteEngine{knitr::rmarkdown}\n"
 ---
         

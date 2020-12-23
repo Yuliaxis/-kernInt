@@ -15,7 +15,7 @@
 #' diag(DATA[,,3]) <- 1
 #' KInt(data=DATA)
 #' KInt(data=DATA,coeff=c(0.5,0.3,0.2))
-#'
+#'@importFrom methods is
 #' @export
 
 
@@ -23,7 +23,7 @@ KInt <- function(data,coeff="mean") {
 
   d <- aperm(data,c(3,1,2))
 
-  if(class(coeff)!="numeric") return(colMeans(d))
+  if(!is(coeff,"numeric")) return(colMeans(d))
 
   if(dim(d)[1] != length(coeff)) stop("Length of the coefficients
                                         vector different to the number of matrices")

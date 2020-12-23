@@ -42,7 +42,7 @@
 #' w <- matrix(c(0.5,0.1,0.9,0.5,0.9,0.1),nrow=3,ncol=2)
 #' regress(data=Nose,kernel="jac",y=age,C=c(1,10,100), coeff = w, k=10)
 #' @importFrom kernlab alpha alphaindex as.kernelMatrix kernelMatrix predict rbfdot SVindex
-#' @importFrom methods hasArg
+#' @importFrom methods hasArg is
 #' @export
 
 regress <- function(data, y,  coeff,  kernel, p=0.2,  C=1, H=NULL, E=0.01, domain=NULL, k) {

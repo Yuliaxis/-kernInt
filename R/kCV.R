@@ -135,9 +135,11 @@ kernHelp <- function(x) {
 
 ## kCV procedure if MKL is being performed
 #' @keywords internal
+#' @importFrom methods is
+
 kCV.MKL <- function(ARRAY, COEFF, KERNH, kernels, method, ...) {
   min.error <- Inf
-  if(class(COEFF) != "matrix") COEFF <- matrix(COEFF,ncol=length(COEFF),byrow=TRUE)
+  if(!is(COEFF,"matrix")) COEFF <- matrix(COEFF,ncol=length(COEFF),byrow=TRUE)
   d <- nrow(COEFF)
   d2 <- ncol(COEFF)
 

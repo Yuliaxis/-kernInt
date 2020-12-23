@@ -26,14 +26,15 @@
 #' ## Spatial data fusion case
 #' hklust(data=smoker$abund,kernel=rep("clin",4),title="Nose samples",cut=2,colors=c("black","red"))
 #' @importFrom stats as.dist hclust cutree rect.hclust
+#' @importFrom methods is
 #' @export
 
 
 hklust <- function(data, comb="mean", kernel, H=NULL, domain=NULL, method="ward.D2", plot=TRUE, labels=NULL, title=NULL, cut=NULL, height=NULL, colors="black") {
-  if(class(data) == "list" | class(data) == "array" ) {
+  if(is(data,"data.frame") | is(data, "matrix") ) {
+    kMatrix <- kernelSelect(data=data, kernel=kernel, h=H)
+    }  else  {
     kMatrix <-fuseData(DATA=data,kernels=kernel,coeff=comb,h=H)
-  }  else  {
-   kMatrix <- kernelSelect(data=data, kernel=kernel, h=H)
   }
   distances <- stats::as.dist(1-kMatrix)
   clustering <- stats::hclust(distances,method = method)
@@ -77,17 +78,19 @@ hklust <- function(data, comb="mean", kernel, H=NULL, domain=NULL, method="ward.
 #' kernPCA(data=Airway,kernel=rep("jac",2),title="Airway samples",y=smoking)#'
 #' @import ggplot2
 #' @importFrom  graphics plot
+#' @importFrom methods is
+
 #' @export
 
 
 kernPCA <- function(data, comb="mean",kernel, plot=TRUE,H=NULL,domain=NULL, y, dim=c(1,2), colors, na.col="grey70", title, legend = TRUE, labels=FALSE) {
-  if(class(data) == "list" | class(data) == "array" ) {
-    matrix <-fuseData(DATA=data,kernels=kernel,coeff=comb,h=H)
+  if(is(data,"data.frame") | is(data, "matrix") ) {
+    kMatrix <- kernelSelect(data=data, kernel=kernel, h=H)
   }  else  {
-    matrix <- kernelSelect(data=data, kernel=kernel, h=H)
+    kMatrix <-fuseData(DATA=data,kernels=kernel,coeff=comb,h=H)
   }
   if(sum(grepl("rbf",kernel)>0) && is.null(H)) stop("H is mandatory")
-  matrix <- kernlab::as.kernelMatrix(matrix)
+  matrix <- kernlab::as.kernelMatrix(kMatrix)
   i <- dim[1]; j <- dim[2]
   subjects.kpca <- kernlab::kpca(matrix,  kernel = matrix)
   xpercent <- kernlab::eig(subjects.kpca)[i]/sum(kernlab::eig(subjects.kpca))*100

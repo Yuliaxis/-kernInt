@@ -25,6 +25,7 @@ cosNorm <- function(K) {
 
 
 Linear <- function(data,cos.norm=TRUE) {
+  data <- as.matrix(data)
   K <- tcrossprod(data)
   if(cos.norm) K <- cosNorm(K)
   rownames(K) <- rownames(data)
@@ -44,6 +45,7 @@ Linear <- function(data,cos.norm=TRUE) {
 #' @export
 
 RBF <- function(data,h=NULL) {
+  data <- as.matrix(data)
   N <- nrow(data)
   kk <- tcrossprod(data)
   dd <- diag(kk)
@@ -160,11 +162,12 @@ clrRBF <- function(data,h=NULL) {
 #' fitted <- lsq(data=growth2,degree=2)
 #' Kfun(fitted,domain=c(1,18))
 #' @importFrom polynom integral polynomial
+#' @importFrom methods is
 #' @export
 
 Kfun <- function(data,domain,cos.norm=FALSE) {
 
-  if(class(data) != "lsq") stop("data should be of class lsq")
+  if(!is(data, "lsq")) stop("data should be of class lsq")
 
   degree <- data$degree
 
@@ -227,11 +230,13 @@ Kfun <- function(data,domain,cos.norm=FALSE) {
 #' fitted <- lsq(data=growth2,degree=2)
 #' RBFun(fitted,domain=c(1,18),h=0.00001)
 #' @importFrom polynom integral polynomial
+#' @importFrom methods is
+
 #' @export
 
 RBFun <- function(data,h=NULL,domain) {
 
-  if(class(data) != "lsq") stop("data should be of class lsq")
+  if(!is(data,"lsq")) stop("data should be of class lsq")
 
   degree <- data$degree
 
@@ -327,6 +332,7 @@ seqEval <- function(DATA,kernels,domain,h) UseMethod("seqEval",DATA)
 
 seqEval.array <- function(DATA,kernels, domain=NULL, h=NULL) {
   m <- dim(DATA)[3]
+  if(is(DATA,"matrix")) return(kernelSelect(data = DATA, domain = domain, kernel = kernels, h = h))
   n <- nrow(DATA[,,1])
   K <- array(0,dim=c(n,n,m))
   for(i in 1:m) K[,,i] <- kernelSelect(data = DATA[,,i],domain=domain,kernel = kernels[i], h=h[i])
