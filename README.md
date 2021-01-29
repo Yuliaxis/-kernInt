@@ -4,11 +4,13 @@
 
 - Current version: 0.1.0
 - Author: Elies Ramon
-- e-mail: elies.ramon@cragenomica.es
+- e-mail: eramongurrea@gmail.com
 
 ## Purpose
 
-**kernInt** uses the kernel framework to unify supervised and unsupervised microbiome analyses, while paying special attention to spatial and temporal integration. 
+**kernInt** uses the kernel framework to unify supervised and unsupervised microbiome analyses, while paying special attention to spatial and temporal integration.  If you find our package useful, please cite:
+
+Ramon E, Belanche-Muñoz L, Molist F, Quintanilla R, Perez-Enciso M, and Ramayo-Caldas Y (2021) kernInt: A Kernel Framework for Integrating Supervised and Unsupervised Analyses in Spatio-Temporal Metagenomic Datasets. Front. Microbiol. 12:609048.doi: 10.3389/fmicb.2021.609048
 
 ## Installation and usage 
 
