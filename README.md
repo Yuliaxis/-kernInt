@@ -58,7 +58,7 @@ We offer three metagenomic datasets with the package: a single point soil datase
 
 **Pig data**: Previously unpublished longitudinal gut microbiome dataset of 153 piglets during their first week of life.
  
-[**Growth**](https://europepmc.org/article/med/13217130): Berkeley longitudinal height data of 54 girls and 39 boys (93 individuals in total) from ages 11 to 18.
+[**Growth**](https://europepmc.org/article/med/13217130): Berkeley longitudinal height data of 54 girls and 39 boys (93 individuals in total) from ages 0 to 18.
 
 
 ### Vignette

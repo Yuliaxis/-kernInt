@@ -31,9 +31,10 @@
 
 
 hklust <- function(data, comb="mean", kernel, H=NULL, domain=NULL, method="ward.D2", plot=TRUE, labels=NULL, title=NULL, cut=NULL, height=NULL, colors="black") {
-  if(is(data,"data.frame") | is(data, "matrix") ) {
-    kMatrix <- kernelSelect(data=data, kernel=kernel, h=H)
-    }  else  {
+
+  if (is(data,"data.frame") | is(data,"lsq") | is(data, "matrix") ) {
+    kMatrix <- kernelSelect(data=data, kernel=kernel, domain=domain, h=H)
+  } else  {
     kMatrix <-fuseData(DATA=data,kernels=kernel,coeff=comb,h=H)
   }
   distances <- stats::as.dist(1-kMatrix)
@@ -84,9 +85,9 @@ hklust <- function(data, comb="mean", kernel, H=NULL, domain=NULL, method="ward.
 
 
 kernPCA <- function(data, comb="mean",kernel, plot=TRUE,H=NULL,domain=NULL, y, dim=c(1,2), colors, na.col="grey70", title, legend = TRUE, labels=FALSE) {
-  if(is(data,"data.frame") | is(data, "matrix") ) {
-    kMatrix <- kernelSelect(data=data, kernel=kernel, h=H)
-  }  else  {
+  if (is(data,"data.frame") | is(data,"lsq") | is(data, "matrix") ) {
+    kMatrix <- kernelSelect(data=data, kernel=kernel, domain=domain, h=H)
+  } else  {
     kMatrix <-fuseData(DATA=data,kernels=kernel,coeff=comb,h=H)
   }
   if(sum(grepl("rbf",kernel)>0) && is.null(H)) stop("H is mandatory")
